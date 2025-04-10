@@ -1,0 +1,8 @@
+[build]
+  functions = "functions"
+  publish = "."
+
+[[redirects]]
+  from = "/submit"
+  to = "/.netlify/functions/submitDrawing"
+  status = 200

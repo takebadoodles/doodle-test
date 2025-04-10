@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Doodle Gallery</title>
+  <style>
+    img { width: 200px; margin: 10px; border: 1px solid #ccc; }
+    body { font-family: sans-serif; padding: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Your Private Gallery</h1>
+  <div id="gallery"></div>
+
+  <script>
+    fetch('/gallery-data')
+      .then(res => res.json())
+      .then(images => {
+        const gallery = document.getElementById('gallery');
+        images.forEach(src => {
+          const img = document.createElement('img');
+          img.src = src;
+          gallery.appendChild(img);
+        });
+      });
+  </script>
+</body>
+</html>
