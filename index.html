@@ -83,10 +83,90 @@
                 margin: 0 5px;
             }
         }
+        #layerMenu {
+            position: absolute;
+            top: 55px;
+            left: 20px;
+            width: 200px;
+            background: #fff;
+            border: 1px solid #aaa;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            padding: 10px;
+            display: none; /* Hidden by default */
+            z-index: 1000;
+            text-align: left;
+        }
+
+        #toggleLayerMenu {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            background: #ff89a4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #layerContent {
+            margin-top: 10px; /* Increase this value for more space */
+        }
+
+        .layer-item.selected {
+            border: 2px solid #ff4d88;
+            border-radius: 6px;
+            padding: 4px;
+            background: #ffe5ed;
+        }
+
+        .layer-item {
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+            .layer-item:hover {
+                background: #fce4ec;
+            }
+        .layer-label {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 2px 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s ease;
+            background-color: transparent;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+
+            .layer-label:hover {
+                background-color: #ff9cb1; /* Pink only around text */
+            }
+
+
+
+
     </style>
 </head>
 <body>
     <h1>Submit a Doodle!!!</h1>
+    <button id="toggleLayerMenu">☰ Layers</button>
+    <div id="layerMenu">
+        <button id="addLayer" style="margin-bottom: 10px;">➕</button>
+        <div id="layerContent">
+            <p>Background Layer</p>
+        </div>
+    </div>
+
+
     <canvas id="canvas" width="400" height="300"></canvas><br />
 
     <div id="tools">
@@ -123,6 +203,211 @@
         const eyedropperIcon = document.getElementById("eyedropper");
         const bucketIcon = document.getElementById("bucket");
         const submitButton = document.getElementById("submit");
+        const toggleLayerMenu = document.getElementById("toggleLayerMenu");
+        const layerMenu = document.getElementById("layerMenu");
+
+        // Initialize layers array with a background layer
+        let activeLayerIndex = 0;
+
+        let layers = [
+            {
+                name: 'Background',
+                canvas: document.createElement('canvas'),
+                ctx: null,
+                visible: true,
+                undoStack: [],
+                redoStack: []
+            }
+        ];
+
+
+
+
+        // Set canvas dimensions for the background layer
+        layers[0].canvas.width = canvas.width;
+        layers[0].canvas.height = canvas.height;
+        layers[0].ctx = layers[0].canvas.getContext('2d');
+        setActiveLayer(0);        // Use the background as the active layer
+        updateLayerMenu();        // Show the background layer in the UI
+
+
+        document.getElementById("addLayer").addEventListener("click", addNewDrawingLayer);
+
+        // Function to toggle visibility of layers
+        function toggleLayerVisibility(index) {
+            layers[index].visible = !layers[index].visible;
+            renderAllLayers();
+            updateLayerMenu(); 
+        }
+
+
+        function setActiveLayer(index) {
+            activeLayerIndex = index;
+            renderAllLayers();
+            updateLayerMenu(); 
+        }
+
+        function addNewDrawingLayer() {
+            const newLayer = {
+                name: `Layer ${layers.length - 1}`,  // because layer[0] is background
+                canvas: document.createElement('canvas'),
+                ctx: null,
+                visible: true,
+                undoStack: [],
+                redoStack: []
+            };
+
+            newLayer.canvas.width = canvas.width;
+            newLayer.canvas.height = canvas.height;
+            newLayer.ctx = newLayer.canvas.getContext('2d');
+
+            layers.push(newLayer);
+            setActiveLayer(layers.length - 1);  // make new layer active
+            updateLayerMenu();
+        }
+
+
+
+        // Function to update the layer menu dynamically
+        function updateLayerMenu() {
+            const layerContent = document.getElementById("layerContent");
+            layerContent.innerHTML = ''; // Clear previous layers
+
+            // 🔁 Loop in REVERSE so newest layers appear first (on top)
+            [...layers].reverse().forEach((layer, visualIndex) => {
+                const actualIndex = layers.length - 1 - visualIndex;
+
+                const layerDiv = document.createElement('div');
+                layerDiv.classList.add('layer-item');
+                if (actualIndex === activeLayerIndex) {
+                    layerDiv.classList.add('selected');
+                }
+
+                // 🧱 Grid layout
+                layerDiv.style.display = 'grid';
+                layerDiv.style.gridTemplateColumns = 'auto auto auto';
+                layerDiv.style.alignItems = 'center';
+                layerDiv.style.columnGap = '6px';
+                layerDiv.style.marginBottom = '6px';
+
+                // 🖼 Thumbnail
+                const thumb = document.createElement('canvas');
+                const thumbWidth = 32;
+                const thumbHeight = 24;
+                thumb.width = thumbHeight;
+                thumb.height = thumbHeight;
+
+                thumb.style.width = `${thumbWidth}px`;
+                thumb.style.height = `${thumbHeight}px`;
+                thumb.style.border = '1px solid #aaa';
+                thumb.style.background = '#fff';
+                thumb.style.imageRendering = 'pixelated';
+                thumb.style.flexShrink = '0';
+
+                const thumbCtx = thumb.getContext("2d");
+                thumbCtx.imageSmoothingEnabled = false;
+                thumbCtx.clearRect(0, 0, thumb.width, thumb.height);
+                const preview = document.createElement('canvas');
+                preview.width = thumb.width;
+                preview.height = thumb.height;
+                const previewCtx = preview.getContext('2d');
+                previewCtx.imageSmoothingEnabled = true;
+                previewCtx.drawImage(layer.canvas, 0, 0, preview.width, preview.height);
+
+                // ✅ Visibility checkbox
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = layer.visible;
+                checkbox.addEventListener('change', () => {
+                    toggleLayerVisibility(actualIndex);
+                    renderAllLayers();
+                });
+
+                // 📝 Layer label (renameable)
+                const labelWrapper = document.createElement('div');
+                labelWrapper.classList.add('layer-label');
+                labelWrapper.textContent = layer.name;
+                labelWrapper.style.cursor = 'text';
+                labelWrapper.style.flexGrow = '0';
+                labelWrapper.style.width = 'fit-content';
+
+                labelWrapper.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = layer.name;
+                    input.style.width = '100%';
+                    input.style.boxSizing = 'border-box';
+                    input.style.fontSize = 'inherit';
+                    input.style.border = '1px solid #ccc';
+                    input.style.borderRadius = '4px';
+                    input.style.padding = '2px 4px';
+
+
+                    labelWrapper.replaceChildren(input);
+                    input.focus();
+
+                    function commitRename() {
+                        const newName = input.value.trim();
+                        if (newName) {
+                            layer.name = newName;
+                        }
+                        updateLayerMenu();
+                    }
+
+                    input.addEventListener('blur', commitRename);
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') input.blur();
+                        if (e.key === 'Escape') updateLayerMenu();
+                    });
+                });
+
+                // 🖱️ Clicking anywhere on the row (except checkbox) sets it active
+                layerDiv.addEventListener('click', (e) => {
+                    if (e.target !== checkbox) {
+                        setActiveLayer(actualIndex);
+                    }
+                });
+
+                // ✅ Assemble UI
+                layerDiv.appendChild(thumb);
+                layerDiv.appendChild(checkbox);
+                layerDiv.appendChild(labelWrapper);
+                layerContent.appendChild(layerDiv);
+            });
+
+            updateLayerThumbnails();
+        }
+
+
+
+
+        function updateLayerThumbnails() {
+            const thumbnails = document.querySelectorAll(".layer-item canvas");
+
+            [...layers].reverse().forEach((layer, visualIndex) => {
+                const thumb = thumbnails[visualIndex];
+                const ctx = thumb.getContext("2d");
+                ctx.imageSmoothingEnabled = false;
+                ctx.clearRect(0, 0, thumb.width, thumb.height);
+                ctx.drawImage(layer.canvas, 0, 0, thumb.width, thumb.height);
+            });
+        }
+
+
+
+
+        // Draw something on the background layer (optional)
+        layers[0].ctx.fillStyle = "#FFFFFF";
+        layers[0].ctx.fillRect(0, 0, layers[0].canvas.width, layers[0].canvas.height);
+
+        
+   
+
+
+
 
         let isDrawing = false;
         let mouseDown = false;
@@ -130,25 +415,42 @@
         let lastY = 0;
         let brushSize = 2;
         let brushColor = "#000000";
-        let drawingHistory = [];
-        let currentHistoryIndex = -1;
         let isEraser = false;
         let hasDrawn = false;
         let isEyedropper = false;
         let isBucket = false;
+         // Default to drawing layer
 
         function fillCanvasWhite() {
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
+        function renderAllLayers() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 👇 Draw from bottom layer to top — assuming layer[0] is bottom
+            for (let i = 0; i < layers.length; i++) {
+                if (layers[i].visible) {
+                    ctx.drawImage(layers[i].canvas, 0, 0);
+                }
+            }
+        }
+
+
+
+
+
 
         function saveDrawingState() {
-            const data = canvas.toDataURL();
-            if (drawingHistory[currentHistoryIndex] === data) return;
-            drawingHistory = drawingHistory.slice(0, currentHistoryIndex + 1);
-            drawingHistory.push(data);
-            currentHistoryIndex++;
+            const layer = layers[activeLayerIndex];
+            const imgData = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+            layer.undoStack.push(imgData);
+            // Clear redo stack when new state is added
+            layer.redoStack = [];
         }
+
+
+
 
         function startDrawing(x, y) {
             isDrawing = true;
@@ -156,79 +458,146 @@
             hasDrawn = false;
             [lastX, lastY] = [x, y];
 
-            if (isEyedropper || isBucket) {
+            if (isEyedropper) {
                 handleToolClick(Math.floor(x), Math.floor(y));
+            } else if (isBucket) {
+                const layer = layers[activeLayerIndex];
+                const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                layer.undoStack.push(currentState);
+                layer.redoStack = [];
+                handleToolClick(Math.floor(x), Math.floor(y));
+            } else {
+                // For regular drawing/erasing, save state at the beginning
+                const layer = layers[activeLayerIndex];
+                const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                layer.undoStack.push(currentState);
+                layer.redoStack = [];
             }
         }
 
         function draw(x, y) {
-            if (isEyedropper || isBucket) return;
-            if (!isDrawing) return;
+            if (isEyedropper || isBucket || !isDrawing) return;
 
+            // Always mark something was drawn/erased
             hasDrawn = true;
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(x, y);
-            ctx.lineWidth = brushSize;
-            ctx.lineCap = "round";
 
-            ctx.globalCompositeOperation = "source-over";
-            ctx.strokeStyle = isEraser ? "#FFFFFF" : brushColor;
 
-            ctx.stroke();
+
+            const layerCtx = layers[activeLayerIndex].ctx;  // Get context of the active layer
+            layerCtx.beginPath();
+            layerCtx.moveTo(lastX, lastY);
+            layerCtx.lineTo(x, y);
+            layerCtx.lineWidth = brushSize;
+            layerCtx.lineCap = "round";
+
+            if (isEraser) {
+                if (activeLayerIndex === 0) {
+                    // Background layer: draw white
+                    layerCtx.globalCompositeOperation = "source-over";
+                    layerCtx.strokeStyle = "#FFFFFF";
+                } else {
+                    // Other layers: erase to transparency
+                    layerCtx.globalCompositeOperation = "destination-out";
+                    layerCtx.strokeStyle = "rgba(0,0,0,1)"; // any solid color works here
+                }
+            } else {
+                layerCtx.globalCompositeOperation = "source-over";
+                layerCtx.strokeStyle = brushColor;
+            }
+
+            layerCtx.stroke();
+
             [lastX, lastY] = [x, y];
+
+            renderAllLayers();  // Re-render layers after drawing
+            updateLayerThumbnails();  // 💡 Live update the thumbnails
         }
 
+
         function stopDrawing() {
-            if (mouseDown && hasDrawn) {
-                saveDrawingState();
-            }
+            
+
             isDrawing = false;
             mouseDown = false;
         }
 
-        function floodFill(x, y, targetHex, fillHex) {
-            if (targetHex === fillHex) return;
-            const targetRGB = hexToRgb(targetHex);
-            const fillRGB = hexToRgb(fillHex);
 
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        function floodFill(x, y, targetHex, fillHex) {
+            const fillRGB = hexToRgb(fillHex);
+            const layerCtx = layers[activeLayerIndex].ctx;
+            const imageData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
             const width = canvas.width;
             const height = canvas.height;
-            const stack = [[x, y]];
+
+            const visited = new Uint8Array(width * height);
+            const queue = [[x, y]];
+
+            const startIndex = (y * width + x) * 4;
+            const targetRGB = [
+                data[startIndex],
+                data[startIndex + 1],
+                data[startIndex + 2],
+                data[startIndex + 3]
+            ];
+
+            // Skip only if the pixel matches EXACTLY the fill color including alpha
+            if (
+                targetRGB[0] === fillRGB[0] &&
+                targetRGB[1] === fillRGB[1] &&
+                targetRGB[2] === fillRGB[2] &&
+                targetRGB[3] === 255
+            ) return;
 
             function colorAt(x, y) {
-                const index = (y * width + x) * 4;
-                return [data[index], data[index + 1], data[index + 2], data[index + 3]];
+                const i = (y * width + x) * 4;
+                return [data[i], data[i + 1], data[i + 2], data[i + 3]];
             }
 
-            function setColor(x, y, rgb) {
-                const index = (y * width + x) * 4;
-                data[index] = rgb[0];
-                data[index + 1] = rgb[1];
-                data[index + 2] = rgb[2];
-                data[index + 3] = 255;
+            function setColor(x, y) {
+                const i = (y * width + x) * 4;
+                data[i] = fillRGB[0];
+                data[i + 1] = fillRGB[1];
+                data[i + 2] = fillRGB[2];
+                data[i + 3] = 255;
             }
 
-            function colorMatch(a, b) {
-                return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+            function matchColor(c1, c2) {
+                // Allow some small tolerance (good for antialiasing cases)
+                return (
+                    Math.abs(c1[0] - c2[0]) < 5 &&
+                    Math.abs(c1[1] - c2[1]) < 5 &&
+                    Math.abs(c1[2] - c2[2]) < 5 &&
+                    Math.abs(c1[3] - c2[3]) < 5
+                );
             }
 
-            while (stack.length > 0) {
-                const [cx, cy] = stack.pop();
+            while (queue.length > 0) {
+                const [cx, cy] = queue.shift();
                 if (cx < 0 || cy < 0 || cx >= width || cy >= height) continue;
+
+                const idx = cy * width + cx;
+                if (visited[idx]) continue;
+
                 const current = colorAt(cx, cy);
-                if (!colorMatch(current, targetRGB)) continue;
-                setColor(cx, cy, fillRGB);
-                stack.push([cx + 1, cy]);
-                stack.push([cx - 1, cy]);
-                stack.push([cx, cy + 1]);
-                stack.push([cx, cy - 1]);
+                if (!matchColor(current, targetRGB)) continue;
+
+                setColor(cx, cy);
+                visited[idx] = 1;
+
+                queue.push([cx + 1, cy]);
+                queue.push([cx - 1, cy]);
+                queue.push([cx, cy + 1]);
+                queue.push([cx, cy - 1]);
             }
 
-            ctx.putImageData(imageData, 0, 0);
+            layerCtx.putImageData(imageData, 0, 0);
+            renderAllLayers();
+            updateLayerThumbnails();  // ✅ Live update after filling
         }
+
+
+
 
         function hexToRgb(hex) {
             const r = parseInt(hex.slice(1, 3), 16);
@@ -251,19 +620,38 @@
         }
 
         function handleToolClick(x, y) {
-            const pixel = ctx.getImageData(x, y, 1, 1).data;
-            const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
-
             if (isEyedropper) {
+                // Create a temporary canvas to composite visible layers
+                const tempCanvas = document.createElement("canvas");
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext("2d");
+
+                // Composite all visible layers from bottom to top
+                for (let i = 0; i < layers.length; i++) {
+                    if (layers[i].visible) {
+                        tempCtx.drawImage(layers[i].canvas, 0, 0);
+                    }
+                }
+
+                // Sample pixel from merged result
+                const pixel = tempCtx.getImageData(x, y, 1, 1).data;
+                const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+
                 brushColor = hex;
                 colorPicker.value = hex;
-            } else if (isBucket) {
-                const targetPixel = ctx.getImageData(x, y, 1, 1).data;
+                updateLayerThumbnails();  // Optional
+            }
+            else if (isBucket) {
+                // Bucket still uses the active layer only
+                const layerCtx = layers[activeLayerIndex].ctx;
+                const targetPixel = layerCtx.getImageData(x, y, 1, 1).data;
                 const targetHex = rgbToHex(targetPixel[0], targetPixel[1], targetPixel[2]);
-                floodFill(x, y, targetHex, brushColor);
-                saveDrawingState();
+                floodFill(x, y, targetHex, brushColor); // ✅ This must stay
             }
         }
+
+
 
         canvas.addEventListener("touchstart", (e) => {
             e.preventDefault();
@@ -332,22 +720,34 @@
         }
 
         undoButton.addEventListener("click", () => {
-            if (currentHistoryIndex > 0) {
-                currentHistoryIndex--;
-                const imgData = new Image();
-                imgData.src = drawingHistory[currentHistoryIndex];
-                imgData.onload = () => ctx.drawImage(imgData, 0, 0);
+            const layer = layers[activeLayerIndex];
+            if (layer.undoStack.length > 0) {
+                const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                layer.redoStack.push(currentState);
+
+                const prevState = layer.undoStack.pop();
+                layer.ctx.putImageData(prevState, 0, 0);
+                renderAllLayers();
+                updateLayerThumbnails();
             }
         });
 
+
+
         redoButton.addEventListener("click", () => {
-            if (currentHistoryIndex < drawingHistory.length - 1) {
-                currentHistoryIndex++;
-                const imgData = new Image();
-                imgData.src = drawingHistory[currentHistoryIndex];
-                imgData.onload = () => ctx.drawImage(imgData, 0, 0);
+            const layer = layers[activeLayerIndex];
+            if (layer.redoStack.length > 0) {
+                const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                layer.undoStack.push(currentState);
+
+                const redoState = layer.redoStack.pop();
+                layer.ctx.putImageData(redoState, 0, 0);
+                renderAllLayers();
+                updateLayerThumbnails();
             }
         });
+
+
 
         submitButton.addEventListener("click", () => {
             const imageData = canvas.toDataURL("image/png");
@@ -373,6 +773,7 @@
                                 console.error("Error:", response.statusText);
                             }
                         })
+                        
                         .catch(error => {
                             alert("Submission failed.");
                             console.error("Fetch error:", error);
@@ -383,6 +784,7 @@
         window.onload = () => {
             fillCanvasWhite();
             saveDrawingState();
+            renderAllLayers();
         };
         document.addEventListener("keydown", (e) => {
             if (e.ctrlKey && !e.shiftKey && e.key === "z") {
@@ -393,6 +795,11 @@
                 redoButton.click();
             }
         });
+        toggleLayerMenu.addEventListener("click", () => {
+            const isVisible = layerMenu.style.display === "block";
+            layerMenu.style.display = isVisible ? "none" : "block";
+        });
+
 
     </script>
 </body>
