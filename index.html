@@ -419,17 +419,20 @@
                 visible: true,
                 undoStack: [],
                 redoStack: [],
-                opacity: 1 
+                opacity: 1
             };
 
             newLayer.canvas.width = canvas.width;
             newLayer.canvas.height = canvas.height;
             newLayer.ctx = newLayer.canvas.getContext('2d');
 
-            layers.push(newLayer);
-            setActiveLayer(layers.length - 1);  // make new layer active
+            const insertIndex = activeLayerIndex + 1;
+
+            layers.splice(insertIndex, 0, newLayer); // 👈 Insert ABOVE the active one
+            setActiveLayer(insertIndex);             // 👈 Make the new one active
             updateLayerMenu();
         }
+
 
 
 
@@ -592,7 +595,7 @@
                 labelWrapper.style.textOverflow = 'ellipsis';
                 labelWrapper.style.maxWidth = '100px';
 
-                labelWrapper.addEventListener('click', (e) => {
+                labelWrapper.addEventListener('dblclick', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
 
@@ -605,7 +608,6 @@
                     input.style.border = '1px solid #ccc';
                     input.style.borderRadius = '4px';
                     input.style.padding = '2px 4px';
-
 
                     labelWrapper.replaceChildren(input);
                     input.focus();
@@ -625,12 +627,26 @@
                     });
                 });
 
+
                 // 🖱️ Clicking anywhere on the row (except checkbox) sets it active
+                let clickTimeout = null;
+
                 layerDiv.addEventListener('click', (e) => {
                     if (e.target !== checkbox) {
-                        setActiveLayer(actualIndex);
+                        // Wait briefly to see if it becomes a double click
+                        if (clickTimeout) {
+                            clearTimeout(clickTimeout);
+                            clickTimeout = null;
+                            return;
+                        }
+
+                        clickTimeout = setTimeout(() => {
+                            setActiveLayer(actualIndex);
+                            clickTimeout = null;
+                        }, 250); // 250ms window to detect a double click
                     }
                 });
+
 
                 // ✅ Assemble UI
                 layerDiv.appendChild(thumb);
