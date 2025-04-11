@@ -1042,9 +1042,14 @@
         });
 
 
-
         submitButton.addEventListener("click", () => {
+            const backgroundHidden = !layers[0].visible;
             const hasHiddenLayers = layers.some((layer, i) => i !== 0 && !layer.visible);
+
+            if (backgroundHidden) {
+                alert("🚫 The background layer must be visible to submit your drawing.");
+                return;
+            }
 
             if (hasHiddenLayers) {
                 const proceed = confirm("⚠️ Warning! Hidden layers will not be submitted.\n\nDo you want to continue?");
@@ -1052,6 +1057,8 @@
             }
 
             const imageData = canvas.toDataURL("image/png");
+       
+
 
             fetch(imageData)
                 .then(res => res.blob())
