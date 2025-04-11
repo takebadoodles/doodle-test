@@ -932,31 +932,40 @@
                 colorPicker.value = hex;
                 updateLayerThumbnails();  // Optional
             }
-            else if (isBucket) {
-                const layerCtx = layers[activeLayerIndex].ctx;
+            if (!contiguousToggle.checked) {
+                // Non-contiguous: fill entire canvas with brush color, including transparent areas
+                const layer = layers[activeLayerIndex];
+                const layerCtx = layer.ctx;
 
-                if (!contiguousToggle.checked) {
-                    // Non-contiguous: fill whole layer
-                    const imgData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imgData.data;
+                // Save current state for undo
+                const prevState = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+                layer.undoStack.push(prevState);
+                layer.redoStack = [];
 
-                    const rgb = hexToRgb(brushColor);
-                    for (let i = 0; i < data.length; i += 4) {
-                        data[i] = rgb[0];     // R
-                        data[i + 1] = rgb[1]; // G
-                        data[i + 2] = rgb[2]; // B
-                        data[i + 3] = 255;    // A
-                    }
+                // Fill pixels in the image data
+                const imgData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imgData.data;
+                const rgb = hexToRgb(brushColor);
 
-                    layerCtx.putImageData(imgData, 0, 0);
-                    renderAllLayers();
-                    updateLayerThumbnails();
-                } else {
-                    // Contiguous behavior (existing)
-                    const targetPixel = layerCtx.getImageData(x, y, 1, 1).data;
-                    const targetHex = rgbToHex(targetPixel[0], targetPixel[1], targetPixel[2]);
-                    floodFill(x, y, targetHex, brushColor);
+                for (let i = 0; i < data.length; i += 4) {
+                    data[i] = rgb[0];     // R
+                    data[i + 1] = rgb[1]; // G
+                    data[i + 2] = rgb[2]; // B
+                    data[i + 3] = 255;    // A
                 }
+
+                // Apply modified image data to the current layer
+                layerCtx.putImageData(imgData, 0, 0);
+
+                renderAllLayers();
+                updateLayerThumbnails();
+            }
+            else {
+                const layerCtx = layers[activeLayerIndex].ctx;
+                const pixel = layerCtx.getImageData(x, y, 1, 1).data;
+                const targetHex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+
+                floodFill(x, y, targetHex, brushColor);
             }
 
         }
