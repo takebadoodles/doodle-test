@@ -151,7 +151,79 @@
                 background-color: #ff9cb1; /* Pink only around text */
             }
 
+        .layer-placeholder {
+            height: 4px;
+            background-color: #ff4d88;
+            margin: 4px 0;
+            border-radius: 2px;
+        }
 
+
+        .layer-arrows {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-left: auto; /* Push to right in the grid */
+        }
+
+            .layer-arrows button {
+                all: unset; /* Remove all default button styles */
+                cursor: pointer;
+                font-size: 14px;
+                line-height: 1;
+                text-align: center;
+                padding: 2px 4px;
+                border-radius: 4px;
+                transition: background 0.15s ease;
+            }
+
+                .layer-arrows button:hover {
+                    background: #ffe0e8;
+                }
+
+        #opacitySlider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+            #opacitySlider:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+
+            /* Track (the line) */
+            #opacitySlider::-webkit-slider-runnable-track {
+                height: 4px;
+                background: #ccc;
+                border-radius: 10px;
+            }
+
+            #opacitySlider::-moz-range-track {
+                height: 4px;
+                background: #ccc;
+                border-radius: 10px;
+            }
+
+            /* Thumb (the circle) */
+            #opacitySlider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                height: 14px;
+                width: 14px;
+                background: white;
+                border: 2px solid #ff4d88;
+                border-radius: 50%;
+                margin-top: -5px; /* to center over track */
+            }
+
+            #opacitySlider::-moz-range-thumb {
+                height: 14px;
+                width: 14px;
+                background: white;
+                border: 2px solid #ff4d88;
+                border-radius: 50%;
+            }
 
 
     </style>
@@ -160,7 +232,28 @@
     <h1>Submit a Doodle!!!</h1>
     <button id="toggleLayerMenu">☰ Layers</button>
     <div id="layerMenu">
-        <button id="addLayer" style="margin-bottom: 10px;">➕</button>
+        <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 10px;">
+            <button id="addLayer">➕</button>
+            <button id="deleteLayer">🗑️</button>
+
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                <span style="font-size: 12px; color: #444; margin-bottom: -2px;">Opacity</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <input id="opacitySlider"
+                           type="range"
+                           min="0"
+                           max="1"
+                           step="0.01"
+                           value="1"
+                           title="Opacity"
+                           style="width: 80px; height: 4px; accent-color: #ff4d88; border-radius: 10px;" />
+                    <span id="opacityValue" style="font-size: 12px; color: #444;">100%</span>
+                </div>
+            </div>
+
+        </div>
+
+
         <div id="layerContent">
             <p>Background Layer</p>
         </div>
@@ -169,24 +262,31 @@
 
     <canvas id="canvas" width="400" height="300"></canvas><br />
 
-    <div id="tools">
-        <button class="button" id="undo">Undo</button>
-        <button class="button" id="redo">Redo</button>
+                                                          <div id="tools">
+                                                              <button class="button" id="undo">Undo</button>
+                                                              <button class="button" id="redo">Redo</button>
 
-        <label for="brushSize">Brush Size:</label>
-        <input type="range" id="brushSize" min="1" max="10" value="2" />
-        <span id="sizeLabel">2</span><br />
 
-        <label for="colorPicker">Brush Color:</label>
-        <input type="color" id="colorPicker" value="#000000" />
 
-        <div class="tool-icons">
-            <img id="brush" src="brush.png" alt="Brush Tool" title="Brush Tool" />
-            <img id="eraser" src="eraser.png" alt="Eraser Tool" title="Eraser Tool" />
-            <img id="eyedropper" src="eyedropper.png" alt="Eyedropper Tool" title="Eyedropper Tool" />
-            <img id="bucket" src="bucket.png" alt="Bucket Tool" title="Bucket Tool" />
-        </div>
-    </div>
+                                                              <label for="brushSize">Brush Size:</label>
+                                                              <input type="range" id="brushSize" min="1" max="10" value="2" />
+                                                              <span id="sizeLabel">2</span><br />
+
+                                                              <label for="colorPicker">Brush Color:</label>
+                                                              <input type="color" id="colorPicker" value="#000000" />
+
+                                                              <div class="tool-icons">
+                                                                  <img id="brush" src="brush.png" alt="Brush Tool" title="Brush Tool" />
+                                                                  <img id="eraser" src="eraser.png" alt="Eraser Tool" title="Eraser Tool" />
+                                                                  <img id="eyedropper" src="eyedropper.png" alt="Eyedropper Tool" title="Eyedropper Tool" />
+                                                                  <img id="bucket" src="bucket.png" alt="Bucket Tool" title="Bucket Tool" />
+                                                                  <label style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                                                                      <input type="checkbox" id="contiguousToggle" checked />
+                                                                      Contiguous
+                                                                  </label>
+
+                                                              </div>
+                                                          </div>
 
     <button id="submit">Submit</button>
 
@@ -196,9 +296,12 @@
         const undoButton = document.getElementById("undo");
         const redoButton = document.getElementById("redo");
         const brushSizeInput = document.getElementById("brushSize");
+        const opacitySlider = document.getElementById("opacitySlider");
+        const opacityValue = document.getElementById("opacityValue");
         const sizeLabel = document.getElementById("sizeLabel");
         const colorPicker = document.getElementById("colorPicker");
         const eraserIcon = document.getElementById("eraser");
+        const contiguousToggle = document.getElementById("contiguousToggle");
         const brushIcon = document.getElementById("brush");
         const eyedropperIcon = document.getElementById("eyedropper");
         const bucketIcon = document.getElementById("bucket");
@@ -208,6 +311,8 @@
 
         // Initialize layers array with a background layer
         let activeLayerIndex = 0;
+        let dragSrcIndex = null;
+        let dragOverIndex = null;
 
         let layers = [
             {
@@ -216,9 +321,11 @@
                 ctx: null,
                 visible: true,
                 undoStack: [],
-                redoStack: []
+                redoStack: [],
+                opacity: 1 
             }
         ];
+
 
 
 
@@ -230,8 +337,18 @@
         setActiveLayer(0);        // Use the background as the active layer
         updateLayerMenu();        // Show the background layer in the UI
 
+       
+
 
         document.getElementById("addLayer").addEventListener("click", addNewDrawingLayer);
+        document.getElementById("deleteLayer").addEventListener("click", () => {
+            if (activeLayerIndex === 0) {
+                alert("You can't delete the background layer!");
+                return;
+            }
+            deleteLayer(activeLayerIndex);
+        });
+
 
         // Function to toggle visibility of layers
         function toggleLayerVisibility(index) {
@@ -244,17 +361,65 @@
         function setActiveLayer(index) {
             activeLayerIndex = index;
             renderAllLayers();
-            updateLayerMenu(); 
+            updateLayerMenu();
+
+            if (index === 0) {
+                opacitySlider.disabled = true;
+                opacitySlider.value = 1;
+                opacityValue.textContent = "100%";
+            } else {
+                opacitySlider.disabled = false;
+                opacitySlider.value = layers[index].opacity;
+                opacityValue.textContent = Math.round(layers[index].opacity * 100) + "%";
+            }
+
         }
+
+        function moveLayer(fromIndex, toIndex) {
+            if (fromIndex === 0 || toIndex === 0) return;
+            if (toIndex < 0 || toIndex >= layers.length || fromIndex === toIndex) return;
+
+            const layer = layers.splice(fromIndex, 1)[0];
+            layers.splice(toIndex, 0, layer);
+
+            // Adjust active layer index if necessary
+            if (activeLayerIndex === fromIndex) {
+                activeLayerIndex = toIndex;
+            } else if (activeLayerIndex > fromIndex && activeLayerIndex <= toIndex) {
+                activeLayerIndex -= 1;
+            } else if (activeLayerIndex < fromIndex && activeLayerIndex >= toIndex) {
+                activeLayerIndex += 1;
+            }
+
+            renderAllLayers();
+            updateLayerMenu();
+        }
+
+        function deleteLayer(index) {
+            if (index === 0) return; // Don't delete background!
+
+            layers.splice(index, 1); // Remove the layer
+
+            // Adjust active layer index if needed
+            if (activeLayerIndex >= index) {
+                activeLayerIndex = Math.max(0, activeLayerIndex - 1);
+            }
+
+            updateLayerMenu();     // Refresh UI
+            renderAllLayers();     // Redraw canvas
+        }
+
+
 
         function addNewDrawingLayer() {
             const newLayer = {
-                name: `Layer ${layers.length - 1}`,  // because layer[0] is background
+                name: `Layer ${layers.length - 1}`,
                 canvas: document.createElement('canvas'),
                 ctx: null,
                 visible: true,
                 undoStack: [],
-                redoStack: []
+                redoStack: [],
+                opacity: 1 
             };
 
             newLayer.canvas.width = canvas.width;
@@ -279,13 +444,67 @@
 
                 const layerDiv = document.createElement('div');
                 layerDiv.classList.add('layer-item');
+                layerDiv.style.display = "grid";
+                layerDiv.style.gridTemplateColumns = "auto auto 1fr auto";
+                layerDiv.style.alignItems = "center";
+                layerDiv.style.columnGap = "6px";
+
+                // Enable dragging
+                layerDiv.setAttribute("draggable", actualIndex !== 0);
+
+
+                layerDiv.addEventListener("dragstart", (e) => {
+                    dragSrcIndex = actualIndex;
+                    e.dataTransfer.effectAllowed = "move";
+                });
+
+                layerDiv.addEventListener("dragover", (e) => {
+                    e.preventDefault(); // Allow drop
+                    dragOverIndex = actualIndex;
+
+                    // Add placeholder if it doesn't exist
+                    const existing = document.querySelector(".layer-placeholder");
+                    if (!existing) {
+                        const placeholder = document.createElement("div");
+                        placeholder.className = "layer-placeholder";
+                        layerDiv.parentNode.insertBefore(placeholder, layerDiv.nextSibling);
+                    }
+                });
+
+                layerDiv.addEventListener("dragleave", () => {
+                    const placeholder = document.querySelector(".layer-placeholder");
+                    if (placeholder) placeholder.remove();
+                });
+
+                layerDiv.addEventListener("drop", (e) => {
+                    e.preventDefault();
+                    const placeholder = document.querySelector(".layer-placeholder");
+                    if (placeholder) placeholder.remove();
+
+                    if (
+                        dragSrcIndex !== null &&
+                        dragOverIndex !== null &&
+                        dragSrcIndex !== dragOverIndex
+                    ) {
+                        moveLayer(dragSrcIndex, dragOverIndex);
+                    }
+
+                    dragSrcIndex = null;
+                    dragOverIndex = null;
+                });
+
+                layerDiv.addEventListener("dragend", () => {
+                    const placeholder = document.querySelector(".layer-placeholder");
+                    if (placeholder) placeholder.remove();
+                });
+
                 if (actualIndex === activeLayerIndex) {
                     layerDiv.classList.add('selected');
                 }
 
                 // 🧱 Grid layout
                 layerDiv.style.display = 'grid';
-                layerDiv.style.gridTemplateColumns = 'auto auto auto';
+                layerDiv.style.gridTemplateColumns = "auto auto 1fr auto";
                 layerDiv.style.alignItems = 'center';
                 layerDiv.style.columnGap = '6px';
                 layerDiv.style.marginBottom = '6px';
@@ -327,9 +546,51 @@
                 const labelWrapper = document.createElement('div');
                 labelWrapper.classList.add('layer-label');
                 labelWrapper.textContent = layer.name;
+
+                // prettier up/down arrows
+                const arrowWrapper = document.createElement("div");
+               
+
+                arrowWrapper.className = "layer-arrows";
+
+                const upBtn = document.createElement("button");
+                const downBtn = document.createElement("button");
+
+                upBtn.textContent = "⬆️";
+                downBtn.textContent = "⬇️";
+
+                if (actualIndex === 0) {
+                    upBtn.disabled = true;
+                    downBtn.disabled = true;
+                    upBtn.style.opacity = 0.3;
+                    downBtn.style.opacity = 0.3;
+                    upBtn.style.cursor = "not-allowed";
+                    downBtn.style.cursor = "not-allowed";
+                }
+
+                upBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    moveLayer(actualIndex, actualIndex + 1);
+                });
+
+                downBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    moveLayer(actualIndex, actualIndex - 1);
+                });
+    
+             
+
+                arrowWrapper.appendChild(upBtn);
+                arrowWrapper.appendChild(downBtn);
+
+
                 labelWrapper.style.cursor = 'text';
                 labelWrapper.style.flexGrow = '0';
                 labelWrapper.style.width = 'fit-content';
+                labelWrapper.style.whiteSpace = 'nowrap';
+                labelWrapper.style.overflow = 'hidden';
+                labelWrapper.style.textOverflow = 'ellipsis';
+                labelWrapper.style.maxWidth = '100px';
 
                 labelWrapper.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -375,12 +636,23 @@
                 layerDiv.appendChild(thumb);
                 layerDiv.appendChild(checkbox);
                 layerDiv.appendChild(labelWrapper);
+                layerDiv.appendChild(arrowWrapper);
+
+
                 layerContent.appendChild(layerDiv);
             });
 
             updateLayerThumbnails();
         }
 
+
+        opacitySlider.addEventListener("input", () => {
+            if (activeLayerIndex === 0) return;
+            const val = parseFloat(opacitySlider.value);
+            layers[activeLayerIndex].opacity = val;
+            opacityValue.textContent = Math.round(val * 100) + "%";
+            renderAllLayers();
+        });
 
 
 
@@ -431,9 +703,11 @@
             // 👇 Draw from bottom layer to top — assuming layer[0] is bottom
             for (let i = 0; i < layers.length; i++) {
                 if (layers[i].visible) {
+                    ctx.globalAlpha = layers[i].opacity;  // 👈 USE LAYER OPACITY
                     ctx.drawImage(layers[i].canvas, 0, 0);
                 }
             }
+            ctx.globalAlpha = 1; // 👈 RESET after all layers drawn
         }
 
 
@@ -643,12 +917,32 @@
                 updateLayerThumbnails();  // Optional
             }
             else if (isBucket) {
-                // Bucket still uses the active layer only
                 const layerCtx = layers[activeLayerIndex].ctx;
-                const targetPixel = layerCtx.getImageData(x, y, 1, 1).data;
-                const targetHex = rgbToHex(targetPixel[0], targetPixel[1], targetPixel[2]);
-                floodFill(x, y, targetHex, brushColor); // ✅ This must stay
+
+                if (!contiguousToggle.checked) {
+                    // Non-contiguous: fill whole layer
+                    const imgData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imgData.data;
+
+                    const rgb = hexToRgb(brushColor);
+                    for (let i = 0; i < data.length; i += 4) {
+                        data[i] = rgb[0];     // R
+                        data[i + 1] = rgb[1]; // G
+                        data[i + 2] = rgb[2]; // B
+                        data[i + 3] = 255;    // A
+                    }
+
+                    layerCtx.putImageData(imgData, 0, 0);
+                    renderAllLayers();
+                    updateLayerThumbnails();
+                } else {
+                    // Contiguous behavior (existing)
+                    const targetPixel = layerCtx.getImageData(x, y, 1, 1).data;
+                    const targetHex = rgbToHex(targetPixel[0], targetPixel[1], targetPixel[2]);
+                    floodFill(x, y, targetHex, brushColor);
+                }
             }
+
         }
 
 
@@ -750,6 +1044,13 @@
 
 
         submitButton.addEventListener("click", () => {
+            const hasHiddenLayers = layers.some((layer, i) => i !== 0 && !layer.visible);
+
+            if (hasHiddenLayers) {
+                const proceed = confirm("⚠️ Warning! Hidden layers will not be submitted.\n\nDo you want to continue?");
+                if (!proceed) return;
+            }
+
             const imageData = canvas.toDataURL("image/png");
 
             fetch(imageData)
