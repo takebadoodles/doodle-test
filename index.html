@@ -432,7 +432,7 @@
         }
 
         function deleteLayer(index) {
-            if (index === 0) return; // Don't delete background!
+            if (index === 0) return; // Don't delete background
 
             layers.splice(index, 1); // Remove the layer
 
@@ -465,8 +465,8 @@
 
             const insertIndex = activeLayerIndex + 1;
 
-            layers.splice(insertIndex, 0, newLayer); // 👈 Insert ABOVE the active one
-            setActiveLayer(insertIndex);             // 👈 Make the new one active
+            layers.splice(insertIndex, 0, newLayer); 
+            setActiveLayer(insertIndex);             
             updateLayerMenu();
         }
 
@@ -478,7 +478,7 @@
             const layerContent = document.getElementById("layerContent");
             layerContent.innerHTML = ''; // Clear previous layers
 
-            // 🔁 Loop in REVERSE so newest layers appear first (on top)
+            //  Loop in REVERSE so newest layers appear first (on top)
             [...layers].reverse().forEach((layer, visualIndex) => {
                 const actualIndex = layers.length - 1 - visualIndex;
 
@@ -542,14 +542,14 @@
                     layerDiv.classList.add('selected');
                 }
 
-                // 🧱 Grid layout
+                //  Grid layout
                 layerDiv.style.display = 'grid';
                 layerDiv.style.gridTemplateColumns = "auto auto 1fr auto";
                 layerDiv.style.alignItems = 'center';
                 layerDiv.style.columnGap = '6px';
                 layerDiv.style.marginBottom = '6px';
 
-                // 🖼 Thumbnail
+                //  Thumbnail
                 const thumb = document.createElement('canvas');
                 const thumbWidth = 32;
                 const thumbHeight = 24;
@@ -573,7 +573,7 @@
                 previewCtx.imageSmoothingEnabled = true;
                 previewCtx.drawImage(layer.canvas, 0, 0, preview.width, preview.height);
 
-                // 👁️ Visibility toggle using emoji
+                //  Visibility toggle using emoji
                 const visibilityToggle = document.createElement('span');
                 visibilityToggle.textContent = layer.visible ? "👁️" : "🚫";
                 visibilityToggle.title = layer.visible ? "Visible" : "Hidden";
@@ -589,7 +589,7 @@
                     visibilityToggle.title = layers[actualIndex].visible ? "Visible" : "Hidden";
                 });
 
-                // 🔒 Alpha Lock emoji toggle
+                //  Alpha Lock emoji toggle
                 const alphaLockToggle = document.createElement("img");
                 alphaLockToggle.src = layer.alphaLock ? "lock.png" : "unlock.png";
                 alphaLockToggle.alt = "Alpha Lock Toggle";
@@ -606,7 +606,7 @@
                 }
 
 
-                // 🧱 Stack visibility + alpha lock vertically
+                //  Stack visibility + alpha lock vertically
                 const toggleWrapper = document.createElement("div");
                 toggleWrapper.style.display = "flex";
                 toggleWrapper.style.flexDirection = "column";
@@ -650,7 +650,7 @@
 
 
 
-                // 📝 Layer label (renameable)
+                // Layer label (renameable)
                 const labelWrapper = document.createElement('div');
                 labelWrapper.classList.add('layer-label');
                 labelWrapper.textContent = layer.name;
@@ -738,7 +738,7 @@
                 });
 
 
-                // 🖱️ Clicking anywhere on the row (except checkbox) sets it active
+                //  Clicking anywhere on the row (except checkbox) sets it active
                 let clickTimeout = null;
 
                 layerDiv.addEventListener('click', (e) => {
@@ -760,7 +760,7 @@
 
 
 
-                // ✅ Assemble UI
+                //  Assemble UI
                 layerDiv.appendChild(thumb);
                 layerDiv.appendChild(toggleWrapper);
                 layerDiv.appendChild(labelWrapper);
@@ -799,7 +799,7 @@
 
 
 
-        // Draw something on the background layer (optional)
+        // Draw something on the background layer 
         layers[0].ctx.fillStyle = "#FFFFFF";
         layers[0].ctx.fillRect(0, 0, layers[0].canvas.width, layers[0].canvas.height);
 
@@ -828,17 +828,16 @@
         function renderAllLayers() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 👇 Draw from bottom layer to top — assuming layer[0] is bottom
+            // Draw from bottom layer to top — assuming layer[0] is bottom
             for (let i = 0; i < layers.length; i++) {
                 if (layers[i].visible) {
-                    ctx.globalAlpha = layers[i].opacity;  // 👈 USE LAYER OPACITY
+                    ctx.globalAlpha = layers[i].opacity;
                     ctx.drawImage(layers[i].canvas, 0, 0);
                 }
             }
-            ctx.globalAlpha = 1; // 👈 RESET after all layers drawn
+            ctx.globalAlpha = 1;
+
         }
-
-
 
 
 
@@ -916,7 +915,7 @@
                         // Prevent anything from appearing outside visible areas
                         sData[i + 3] = 0;
                     } else if (isEraser && sData[i + 3] > 0) {
-                        // ⚡️ Eraser: make that pixel fully transparent in the BASE layer
+                        // make that pixel fully transparent in the BASE layer
                         bData[i + 0] = 0;
                         bData[i + 1] = 0;
                         bData[i + 2] = 0;
@@ -1050,7 +1049,7 @@
 
             layerCtx.putImageData(imageData, 0, 0);
             renderAllLayers();
-            updateLayerThumbnails();  // ✅ Live update after filling
+            updateLayerThumbnails();  
         }
 
 
@@ -1097,9 +1096,9 @@
 
                 brushColor = hex;
                 colorPicker.value = hex;
-                updateLayerThumbnails();  // Optional
+                updateLayerThumbnails();  
 
-                return; // 👈 THIS is the key fix!
+                return; 
             }
 
             if (!contiguousToggle.checked) {
@@ -1325,6 +1324,12 @@
             link.click();
         });
 
+        window.addEventListener("beforeunload", function (e) {
+            if (hasDrawn) {
+                e.preventDefault();
+                e.returnValue = ''; // Required to trigger the native confirm dialog
+            }
+        });
 
 
     </script>
