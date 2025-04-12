@@ -1306,11 +1306,25 @@
         });
 
         document.getElementById("downloadBtn").addEventListener("click", () => {
+            const backgroundHidden = !layers[0].visible;
+            const hasHiddenLayers = layers.some((layer, i) => i !== 0 && !layer.visible);
+
+            if (backgroundHidden) {
+                alert("🚫 The background layer must be visible to download your doodle.");
+                return;
+            }
+
+            if (hasHiddenLayers) {
+                const proceed = confirm("⚠️ Warning! Hidden layers will not be included in the downloaded image.\n\nDo you want to continue?");
+                if (!proceed) return;
+            }
+
             const link = document.createElement("a");
             link.download = "my-doodle.png";
             link.href = canvas.toDataURL("image/png");
             link.click();
         });
+
 
 
     </script>
