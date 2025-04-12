@@ -1077,7 +1077,10 @@
                 brushColor = hex;
                 colorPicker.value = hex;
                 updateLayerThumbnails();  // Optional
+
+                return; // 👈 THIS is the key fix!
             }
+
             if (!contiguousToggle.checked) {
                 // Non-contiguous: fill entire canvas with brush color, including transparent areas
                 const layer = layers[activeLayerIndex];
