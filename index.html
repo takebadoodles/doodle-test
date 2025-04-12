@@ -237,6 +237,27 @@
             border-radius: 4px;
         }
 
+        #downloadBtn {
+            position: absolute;
+            top: 12px;
+            right: 20px;
+            z-index: 1100;
+            background: #ff89a4;
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            box-shadow: 1px 1px 5px rgba(0,0,0,0.2);
+            transition: background 0.2s ease;
+        }
+
+            #downloadBtn:hover {
+                background: #ff5e88;
+            }
+
+
 
     </style>
 </head>
@@ -273,7 +294,7 @@
         </div>
     </div>
 
-
+    <button id="downloadBtn" title="Download your doodle 💾">💾</button>
     <canvas id="canvas" width="400" height="300"></canvas><br />
 
     <div id="tools">
@@ -581,7 +602,7 @@
                     alphaLockToggle.style.pointerEvents = "none";
                     alphaLockToggle.title = "Alpha Lock disabled on background layer";
                 } else {
-                  
+
                 }
 
 
@@ -1282,6 +1303,13 @@
         toggleLayerMenu.addEventListener("click", () => {
             const isVisible = layerMenu.style.display === "block";
             layerMenu.style.display = isVisible ? "none" : "block";
+        });
+
+        document.getElementById("downloadBtn").addEventListener("click", () => {
+            const link = document.createElement("a");
+            link.download = "my-doodle.png";
+            link.href = canvas.toDataURL("image/png");
+            link.click();
         });
 
 
