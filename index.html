@@ -257,6 +257,49 @@
                 background: #ff5e88;
             }
 
+        input[type="range"]#brushSize,
+        input[type="range"]#eraserSize {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 120px;
+            height: 4px;
+        }
+
+            input[type="range"]#brushSize::-webkit-slider-runnable-track,
+            input[type="range"]#eraserSize::-webkit-slider-runnable-track {
+                height: 4px;
+                background: #ccc;
+                border-radius: 10px;
+            }
+
+            input[type="range"]#brushSize::-webkit-slider-thumb,
+            input[type="range"]#eraserSize::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                height: 14px;
+                width: 14px;
+                background: white;
+                border: 2px solid #ff4d88;
+                border-radius: 50%;
+                margin-top: -5px;
+            }
+
+            input[type="range"]#brushSize::-moz-range-track,
+            input[type="range"]#eraserSize::-moz-range-track {
+                height: 4px;
+                background: #ccc;
+                border-radius: 10px;
+            }
+
+            input[type="range"]#brushSize::-moz-range-thumb,
+            input[type="range"]#eraserSize::-moz-range-thumb {
+                height: 14px;
+                width: 14px;
+                background: white;
+                border: 2px solid #ff4d88;
+                border-radius: 50%;
+            }
 
 
     </style>
@@ -297,31 +340,43 @@
     <button id="downloadBtn" title="Download your doodle 💾">💾</button>
     <canvas id="canvas" width="400" height="300"></canvas><br />
 
-    <div id="tools">
-        <button class="button" id="undo">Undo</button>
-        <button class="button" id="redo">Redo</button>
+                                                          <div id="tools">
+                                                              <button class="button" id="undo">Undo</button>
+                                                              <button class="button" id="redo">Redo</button>
 
 
 
-        <label for="brushSize">Brush Size:</label>
-        <input type="range" id="brushSize" min="1" max="10" value="2" />
-        <span id="sizeLabel">2</span><br />
+                                                              <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                                                  <div style="display: flex; flex-direction: column; align-items: center;">
+                                                                      <label for="eraserSize">Eraser Size</label>
+                                                                      <input type="range" id="eraserSize" min="1" max="50" value="10" />
+                                                                      <span id="eraserSizeLabel" title="Double-click to change" style="cursor: text; margin-top: 2px;">10</span>
+                                                                  </div>
+                                                                  <div style="display: flex; flex-direction: column; align-items: center;">
+                                                                      <label for="brushSize">Brush Size</label>
+                                                                      <input type="range" id="brushSize" min="1" max="50" value="2" />
+                                                                      <span id="brushSizeLabel" title="Double-click to change" style="cursor: text; margin-top: 2px;">2</span>
 
-        <label for="colorPicker">Brush Color:</label>
-        <input type="color" id="colorPicker" value="#000000" />
+                                                                  </div>
+                                                              </div>
 
-        <div class="tool-icons">
-            <img id="brush" src="brush.png" alt="Brush Tool" title="Brush Tool" />
-            <img id="eraser" src="eraser.png" alt="Eraser Tool" title="Eraser Tool" />
-            <img id="eyedropper" src="eyedropper.png" alt="Eyedropper Tool" title="Eyedropper Tool" />
-            <img id="bucket" src="bucket.png" alt="Bucket Tool" title="Bucket Tool" />
-            <label style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
-                <input type="checkbox" id="contiguousToggle" checked />
-                Contiguous
-            </label>
 
-        </div>
-    </div>
+
+                                                              <label for="colorPicker">Brush Color:</label>
+                                                              <input type="color" id="colorPicker" value="#000000" />
+
+                                                              <div class="tool-icons">
+                                                                  <img id="brush" src="brush.png" alt="Brush Tool" title="Brush Tool" />
+                                                                  <img id="eraser" src="eraser.png" alt="Eraser Tool" title="Eraser Tool" />
+                                                                  <img id="eyedropper" src="eyedropper.png" alt="Eyedropper Tool" title="Eyedropper Tool" />
+                                                                  <img id="bucket" src="bucket.png" alt="Bucket Tool" title="Bucket Tool" />
+                                                                  <label style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                                                                      <input type="checkbox" id="contiguousToggle" checked />
+                                                                      Contiguous
+                                                                  </label>
+
+                                                              </div>
+                                                          </div>
 
     <button id="submit">Submit</button>
 
@@ -343,6 +398,9 @@
         const submitButton = document.getElementById("submit");
         const toggleLayerMenu = document.getElementById("toggleLayerMenu");
         const layerMenu = document.getElementById("layerMenu");
+        const eraserSizeInput = document.getElementById("eraserSize");
+        const brushSizeLabel = document.getElementById("brushSizeLabel");
+        const eraserSizeLabel = document.getElementById("eraserSizeLabel");
 
         // Initialize layers array with a background layer
         let activeLayerIndex = 0;
@@ -796,6 +854,67 @@
             });
         }
 
+        function makeSizeEditable(spanId, sliderId) {
+            const span = document.getElementById(spanId);
+            const slider = document.getElementById(sliderId);
+
+            span.addEventListener("dblclick", () => {
+                const input = document.createElement("input");
+                input.type = "number";
+                input.min = slider.min;
+                input.max = slider.max;
+                input.value = slider.value;
+                input.style.width = "40px";
+                input.style.fontSize = "inherit";
+                input.style.textAlign = "center";
+                input.style.border = "1px solid #ccc";
+                input.style.borderRadius = "4px";
+
+                span.replaceWith(input);
+                input.focus();
+                input.select();
+
+                function finish() {
+                    let val = parseInt(input.value);
+                    if (isNaN(val)) val = parseInt(slider.value);
+                    val = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), val));
+                    slider.value = val;
+                    span.textContent = val;
+                    input.replaceWith(span);
+
+                    // Update brushSize if this tool is active
+                    if ((sliderId === "brushSize" && !isEraser) ||
+                        (sliderId === "eraserSize" && isEraser)) {
+                        brushSize = val;
+                    }
+                }
+
+                input.addEventListener("blur", finish);
+                input.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") input.blur();
+                    if (e.key === "Escape") input.replaceWith(span);
+                });
+            });
+
+            // Highlight label on hover
+            span.addEventListener("mouseenter", () => {
+                span.style.background = "#ff9cb1";
+                span.style.borderRadius = "4px";
+                span.style.padding = "2px 6px";
+            });
+            span.addEventListener("mouseleave", () => {
+                span.style.background = "";
+                span.style.padding = "";
+            });
+        }
+
+        window.onload = () => {
+            fillCanvasWhite();
+            saveDrawingState();
+            renderAllLayers();
+            makeSizeEditable("brushSizeLabel", "brushSize");
+            makeSizeEditable("eraserSizeLabel", "eraserSize");
+        };
 
 
 
@@ -1182,9 +1301,19 @@
         document.addEventListener("mouseup", stopDrawing);
 
         brushSizeInput.addEventListener("input", (e) => {
-            brushSize = e.target.value;
-            sizeLabel.textContent = brushSize;
+            if (!isEraser) {
+                brushSize = parseInt(e.target.value);
+            }
+            document.getElementById("brushSizeLabel").textContent = e.target.value;
         });
+
+        eraserSizeInput.addEventListener("input", (e) => {
+            if (isEraser) {
+                brushSize = parseInt(e.target.value);
+            }
+            document.getElementById("eraserSizeLabel").textContent = e.target.value;
+        });
+
 
         colorPicker.addEventListener("input", (e) => {
             brushColor = e.target.value;
@@ -1194,6 +1323,7 @@
             isEraser = true;
             isEyedropper = false;
             isBucket = false;
+            brushSize = parseInt(document.getElementById("eraserSize").value);
             highlightTool("eraser");
         });
 
@@ -1201,8 +1331,10 @@
             isEraser = false;
             isEyedropper = false;
             isBucket = false;
+            brushSize = parseInt(document.getElementById("brushSize").value);
             highlightTool("brush");
         });
+
 
         eyedropperIcon.addEventListener("click", () => {
             isEyedropper = true;
@@ -1301,11 +1433,7 @@
                 });
         });
 
-        window.onload = () => {
-            fillCanvasWhite();
-            saveDrawingState();
-            renderAllLayers();
-        };
+      
         document.addEventListener("keydown", (e) => {
             if (e.ctrlKey && !e.shiftKey && e.key === "z") {
                 e.preventDefault();
