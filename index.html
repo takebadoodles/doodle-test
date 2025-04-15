@@ -338,45 +338,55 @@
     </div>
 
     <button id="downloadBtn" title="Download your doodle 💾">💾</button>
+    <!-- Dropdown menu for download/save options -->
+    <div id="downloadMenu" style="position: absolute; top: 50px; right: 20px; display: none; background: white; border: 1px solid #ccc; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 9999;">
+        <button id="downloadPNG" class="button">📥 Download PNG</button>
+        <button id="saveForLater" class="button">💾 Save For Later</button>
+    </div>
+
+    <!-- Upload input and button -->
+    <input type="file" id="uploadSave" accept=".json" style="display: none;" />
+    <button id="uploadBtn" title="Upload saved doodle file 💾" style="position: absolute; top: 12px; right: 80px; z-index: 1100; background: #ff89a4; color: white; font-size: 18px; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer;">📤</button>
+
     <canvas id="canvas" width="400" height="300"></canvas><br />
 
-                                                          <div id="tools">
-                                                              <button class="button" id="undo">Undo</button>
-                                                              <button class="button" id="redo">Redo</button>
+    <div id="tools">
+        <button class="button" id="undo">Undo</button>
+        <button class="button" id="redo">Redo</button>
 
 
 
-                                                              <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                                                  <div style="display: flex; flex-direction: column; align-items: center;">
-                                                                      <label for="eraserSize">Eraser Size</label>
-                                                                      <input type="range" id="eraserSize" min="1" max="50" value="10" />
-                                                                      <span id="eraserSizeLabel" title="Double-click to change" style="cursor: text; margin-top: 2px;">10</span>
-                                                                  </div>
-                                                                  <div style="display: flex; flex-direction: column; align-items: center;">
-                                                                      <label for="brushSize">Brush Size</label>
-                                                                      <input type="range" id="brushSize" min="1" max="50" value="2" />
-                                                                      <span id="brushSizeLabel" title="Double-click to change" style="cursor: text; margin-top: 2px;">2</span>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <label for="eraserSize">Eraser Size</label>
+                <input type="range" id="eraserSize" min="1" max="50" value="10" />
+                <span id="eraserSizeLabel" title="Double-click to change" style="cursor: text; margin-top: 2px;">10</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <label for="brushSize">Brush Size</label>
+                <input type="range" id="brushSize" min="1" max="50" value="2" />
+                <span id="brushSizeLabel" title="Double-click to change" style="cursor: text; margin-top: 2px;">2</span>
 
-                                                                  </div>
-                                                              </div>
+            </div>
+        </div>
 
 
 
-                                                              <label for="colorPicker">Brush Color:</label>
-                                                              <input type="color" id="colorPicker" value="#000000" />
+        <label for="colorPicker">Brush Color:</label>
+        <input type="color" id="colorPicker" value="#000000" />
 
-                                                              <div class="tool-icons">
-                                                                  <img id="brush" src="brush.png" alt="Brush Tool" title="Brush Tool" />
-                                                                  <img id="eraser" src="eraser.png" alt="Eraser Tool" title="Eraser Tool" />
-                                                                  <img id="eyedropper" src="eyedropper.png" alt="Eyedropper Tool" title="Eyedropper Tool" />
-                                                                  <img id="bucket" src="bucket.png" alt="Bucket Tool" title="Bucket Tool" />
-                                                                  <label style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
-                                                                      <input type="checkbox" id="contiguousToggle" checked />
-                                                                      Contiguous
-                                                                  </label>
+        <div class="tool-icons">
+            <img id="brush" src="brush.png" alt="Brush Tool" title="Brush Tool" />
+            <img id="eraser" src="eraser.png" alt="Eraser Tool" title="Eraser Tool" />
+            <img id="eyedropper" src="eyedropper.png" alt="Eyedropper Tool" title="Eyedropper Tool" />
+            <img id="bucket" src="bucket.png" alt="Bucket Tool" title="Bucket Tool" />
+            <label style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                <input type="checkbox" id="contiguousToggle" checked />
+                Contiguous
+            </label>
 
-                                                              </div>
-                                                          </div>
+        </div>
+    </div>
 
     <button id="submit">Submit</button>
 
@@ -523,8 +533,8 @@
 
             const insertIndex = activeLayerIndex + 1;
 
-            layers.splice(insertIndex, 0, newLayer); 
-            setActiveLayer(insertIndex);             
+            layers.splice(insertIndex, 0, newLayer);
+            setActiveLayer(insertIndex);
             updateLayerMenu();
         }
 
@@ -918,7 +928,7 @@
 
 
 
-        // Draw something on the background layer 
+        // Draw something on the background layer
         layers[0].ctx.fillStyle = "#FFFFFF";
         layers[0].ctx.fillRect(0, 0, layers[0].canvas.width, layers[0].canvas.height);
 
@@ -1231,9 +1241,9 @@
 
                 brushColor = hex;
                 colorPicker.value = hex;
-                updateLayerThumbnails();  
+                updateLayerThumbnails();
 
-                return; 
+                return;
             }
 
             if (!contiguousToggle.checked) {
@@ -1433,7 +1443,7 @@
                 });
         });
 
-      
+
         document.addEventListener("keydown", (e) => {
             if (e.ctrlKey && !e.shiftKey && e.key === "z") {
                 e.preventDefault();
@@ -1448,25 +1458,113 @@
             layerMenu.style.display = isVisible ? "none" : "block";
         });
 
-        document.getElementById("downloadBtn").addEventListener("click", () => {
-            const backgroundHidden = !layers[0].visible;
-            const hasHiddenLayers = layers.some((layer, i) => i !== 0 && !layer.visible);
+        const downloadBtn = document.getElementById("downloadBtn");
+        const downloadMenu = document.getElementById("downloadMenu");
+        const downloadPNG = document.getElementById("downloadPNG");
+        const saveForLater = document.getElementById("saveForLater");
+        const uploadBtn = document.getElementById("uploadBtn");
+        const uploadInput = document.getElementById("uploadSave");
 
-            if (backgroundHidden) {
-                alert("🚫 The background layer must be visible to download your doodle.");
-                return;
-            }
+        downloadBtn.addEventListener("click", () => {
+            downloadMenu.style.display = downloadMenu.style.display === "block" ? "none" : "block";
+        });
 
-            if (hasHiddenLayers) {
-                const proceed = confirm("⚠️ Warning! Hidden layers will not be included in the downloaded image.\n\nDo you want to continue?");
-                if (!proceed) return;
+        // 📥 Download PNG
+        downloadPNG.addEventListener("click", () => {
+            downloadMenu.style.display = "none";
+
+            const mergedCanvas = document.createElement("canvas");
+            mergedCanvas.width = canvas.width;
+            mergedCanvas.height = canvas.height;
+            const mergedCtx = mergedCanvas.getContext("2d");
+
+            for (let i = 0; i < layers.length; i++) {
+                if (layers[i].visible) {
+                    mergedCtx.globalAlpha = layers[i].opacity;
+                    mergedCtx.drawImage(layers[i].canvas, 0, 0);
+                }
             }
+            mergedCtx.globalAlpha = 1;
 
             const link = document.createElement("a");
             link.download = "my-doodle.png";
-            link.href = canvas.toDataURL("image/png");
+            link.href = mergedCanvas.toDataURL("image/png");
             link.click();
         });
+
+        // 💾 Save For Later
+        saveForLater.addEventListener("click", () => {
+            downloadMenu.style.display = "none";
+
+            const saveData = {
+                layers: layers.map(layer => ({
+                    name: layer.name,
+                    visible: layer.visible,
+                    opacity: layer.opacity,
+                    alphaLock: layer.alphaLock,
+                    dataURL: layer.canvas.toDataURL()
+                })),
+                activeLayerIndex
+            };
+
+            const blob = new Blob([JSON.stringify(saveData)], { type: "application/json" });
+            const link = document.createElement("a");
+            link.download = "doodle-save.json";
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        });
+
+        // 📤 Upload Save
+        uploadBtn.addEventListener("click", () => {
+            uploadInput.click();
+        });
+
+        uploadInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                try {
+                    const saveData = JSON.parse(event.target.result);
+                    layers.length = 0;
+
+                    saveData.layers.forEach(savedLayer => {
+                        const newCanvas = document.createElement("canvas");
+                        newCanvas.width = canvas.width;
+                        newCanvas.height = canvas.height;
+                        const ctx = newCanvas.getContext("2d");
+
+                        const img = new Image();
+                        img.onload = () => {
+                            ctx.drawImage(img, 0, 0);
+                            renderAllLayers();
+                            updateLayerMenu();
+                        };
+                        img.src = savedLayer.dataURL;
+
+                        layers.push({
+                            name: savedLayer.name,
+                            visible: savedLayer.visible,
+                            opacity: savedLayer.opacity,
+                            alphaLock: savedLayer.alphaLock,
+                            canvas: newCanvas,
+                            ctx: ctx,
+                            undoStack: [],
+                            redoStack: []
+                        });
+                    });
+
+                    activeLayerIndex = saveData.activeLayerIndex || 0;
+                    renderAllLayers();
+                    updateLayerMenu();
+                } catch (err) {
+                    alert("Failed to load the doodle file. Are you sure it's valid?");
+                }
+            };
+            reader.readAsText(file);
+        });
+
 
         window.addEventListener("beforeunload", function (e) {
             if (hasDrawn) {
