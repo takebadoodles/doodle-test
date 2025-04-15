@@ -51,6 +51,23 @@
             cursor: pointer;
         }
 
+        #tools {
+            position: absolute;
+            top: 40%;
+            left: calc(50% + 220px); /* same horizontal positioning */
+            transform: translateY(-50%); /* 💡 vertically center it */
+
+            background: #fff0f5;
+            padding: 12px;
+            border: 1px solid #aaa;
+            border-radius: 10px;
+            box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        
         @media (max-width: 600px) {
             body {
                 padding: 1rem;
@@ -312,70 +329,10 @@
             flex-wrap: wrap;
         }
 
-        @media (max-width: 600px) {
-            body {
-                font-size: 14px;
-                padding: 1rem;
-                margin: 0;
-            }
-
-            #mainArea {
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 1rem;
-                width: 100%;
-                padding: 0;
-                margin: 0 auto;
-                box-sizing: border-box;
-                overflow-x: hidden;
-            }
-
-            canvas {
-                width: 100%;
-                max-width: 320px;
-                height: auto;
-            }
-
-            #tools {
-                position: relative;
-                left: auto;
-                top: auto;
-                transform: none;
-                width: 100%;
-                max-width: 320px;
-                margin: 0 auto;
-                background: #fff0f5;
-                padding: 12px;
-                border: 1px solid #aaa;
-                border-radius: 10px;
-                box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 12px;
-                box-sizing: border-box;
-            }
-        }
 
 
 
-        #tools {
-            position: absolute;
-            top: 40%;
-            left: calc(50% + 220px); /* same horizontal positioning */
-            transform: translateY(-50%); /* 💡 vertically center it */
-
-            background: #fff0f5;
-            padding: 12px;
-            border: 1px solid #aaa;
-            border-radius: 10px;
-            box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-        }
+       
 
 
 
