@@ -528,20 +528,18 @@
             }
 
             #canvasWrapper {
-                order: 2; /* push canvas down */
+                order: 1; /* canvas comes first */
             }
 
-            3  f {
-                order: 1; /* move tools above */
+            #tools {
+                order: 2; /* tools come below canvas */
             }
 
             #submit {
-                order: 3; /* put button last */
-                width: 100%;
-                max-width: 300px;
-                margin-top: 16px;
+                order: 3; /* submit button still last */
             }
         }
+
 
 
 
