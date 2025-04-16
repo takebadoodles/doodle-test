@@ -134,6 +134,13 @@
                     gap: 4px;
                 }
 
+            .brush-eraser-combo {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                min-width: 100px;
+            }
+
 
             .tool-grid {
                 grid-template-columns: repeat(4, 40px);
@@ -513,1244 +520,1244 @@
         </div>
 
         <div id="tools">
+            <div class="brush-eraser-combo">
+                <!-- 🎨 Brush size first -->
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <label for="brushSize">Brush Size</label>
+                    <input type="range" id="brushSize" min="1" max="50" value="2" />
+                    <span id="brushSizeLabel">2</span>
+                </div>
 
-            <!-- 🎨 Brush size first -->
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <label for="brushSize">Brush Size</label>
-                <input type="range" id="brushSize" min="1" max="50" value="2" />
-                <span id="brushSizeLabel">2</span>
+                <!-- 🧽 Eraser size second -->
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <label for="eraserSize">Eraser Size</label>
+                    <input type="range" id="eraserSize" min="1" max="50" value="10" />
+                    <span id="eraserSizeLabel">10</span>
+                </div>
             </div>
-
-            <!-- 🧽 Eraser size second -->
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <label for="eraserSize">Eraser Size</label>
-                <input type="range" id="eraserSize" min="1" max="50" value="10" />
-                <span id="eraserSizeLabel">10</span>
-            </div>
-
-            <!-- 🌈 Color picker -->
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <label for="colorPicker" style="margin: 0;">Color:</label>
-                <input type="color" id="colorPicker" value="#000000" />
-            </div>
-
-            <!-- ✍️ Tool icons -->
-            <div class="tool-grid">
-                <img id="brush" src="brush.png" title="Brush Tool" />
-                <img id="eraser" src="eraser.png" title="Eraser Tool" />
-                <img id="eyedropper" src="eyedropper.png" title="Eyedropper Tool" />
-                <img id="bucket" src="bucket.png" title="Bucket Tool" />
-            </div>
-
-            <!-- ✅ Contiguous checkbox -->
-            <div style="margin-top: -6px; margin-bottom: 4px; font-size: 12px;">
-                <label style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-                    <input type="checkbox" id="contiguousToggle" checked />
-                    Contiguous
-                </label>
-            </div>
-
-            <div class="undo-redo" style="margin-top: -4px;">
-                <img id="undo" src="undo.png" alt="Undo" title="Undo" />
-                <img id="redo" src="redo.png" alt="Redo" title="Redo" />
-            </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-            <script>
-                const canvas = document.getElementById("canvas");
-                const ctx = canvas.getContext("2d");
-                const undoButton = document.getElementById("undo");
-                const redoButton = document.getElementById("redo");
-                const brushSizeInput = document.getElementById("brushSize");
-                const opacitySlider = document.getElementById("opacitySlider");
-                const opacityValue = document.getElementById("opacityValue");
-                const sizeLabel = document.getElementById("sizeLabel");
-                const colorPicker = document.getElementById("colorPicker");
-                const eraserIcon = document.getElementById("eraser");
-                const contiguousToggle = document.getElementById("contiguousToggle");
-                const brushIcon = document.getElementById("brush");
-                const eyedropperIcon = document.getElementById("eyedropper");
-                const bucketIcon = document.getElementById("bucket");
-                const submitButton = document.getElementById("submit");
-                const toggleLayerMenu = document.getElementById("toggleLayerMenu");
-                const layerMenu = document.getElementById("layerMenu");
-                const eraserSizeInput = document.getElementById("eraserSize");
-                const brushSizeLabel = document.getElementById("brushSizeLabel");
-                const eraserSizeLabel = document.getElementById("eraserSizeLabel");
-
-                // Initialize layers array with a background layer
-                let activeLayerIndex = 0;
-                let dragSrcIndex = null;
-                let dragOverIndex = null;
-
-                let layers = [
-                    {
-                        name: 'Background',
-                        canvas: document.createElement('canvas'),
-                        ctx: null,
-                        visible: true,
-                        undoStack: [],
-                        redoStack: [],
-                        opacity: 1,
-                        alphaLock: false
-                    }
-                ];
-
-
-
-
-
-                // Set canvas dimensions for the background layer
-                layers[0].canvas.width = canvas.width;
-                layers[0].canvas.height = canvas.height;
-                layers[0].ctx = layers[0].canvas.getContext('2d');
-                setActiveLayer(0);        // Use the background as the active layer
-                updateLayerMenu();        // Show the background layer in the UI
-
-
-
-
-                document.getElementById("addLayer").addEventListener("click", addNewDrawingLayer);
-                document.getElementById("deleteLayer").addEventListener("click", () => {
-                    if (activeLayerIndex === 0) {
-                        alert("You can't delete the background layer!");
-                        return;
-                    }
-                    deleteLayer(activeLayerIndex);
-                });
-
-
-                // Function to toggle visibility of layers
-                function toggleLayerVisibility(index) {
-                    layers[index].visible = !layers[index].visible;
-                    renderAllLayers();
-                    updateLayerMenu();
-                }
-
-
-                function setActiveLayer(index) {
-                    activeLayerIndex = index;
-                    renderAllLayers();
-                    updateLayerMenu();
-
-                    if (index === 0) {
-                        opacitySlider.disabled = true;
-                        opacitySlider.value = 1;
-                        opacityValue.textContent = "100%";
-                    } else {
-                        opacitySlider.disabled = false;
-                        opacitySlider.value = layers[index].opacity;
-                        opacityValue.textContent = Math.round(layers[index].opacity * 100) + "%";
-                    }
-
-                }
-
-                function moveLayer(fromIndex, toIndex) {
-                    if (fromIndex === 0 || toIndex === 0) return;
-                    if (toIndex < 0 || toIndex >= layers.length || fromIndex === toIndex) return;
-
-                    const layer = layers.splice(fromIndex, 1)[0];
-                    layers.splice(toIndex, 0, layer);
-
-                    // Adjust active layer index if necessary
-                    if (activeLayerIndex === fromIndex) {
-                        activeLayerIndex = toIndex;
-                    } else if (activeLayerIndex > fromIndex && activeLayerIndex <= toIndex) {
-                        activeLayerIndex -= 1;
-                    } else if (activeLayerIndex < fromIndex && activeLayerIndex >= toIndex) {
-                        activeLayerIndex += 1;
-                    }
-
-                    renderAllLayers();
-                    updateLayerMenu();
-                }
-
-                function deleteLayer(index) {
-                    if (index === 0) return; // Don't delete background
-
-                    layers.splice(index, 1); // Remove the layer
-
-                    // Adjust active layer index if needed
-                    if (activeLayerIndex >= index) {
-                        activeLayerIndex = Math.max(0, activeLayerIndex - 1);
-                    }
-
-                    updateLayerMenu();     // Refresh UI
-                    renderAllLayers();     // Redraw canvas
-                }
-
-
-
-                function addNewDrawingLayer() {
-                    const newLayer = {
-                        name: `Layer ${layers.length - 1}`,
-                        canvas: document.createElement('canvas'),
-                        ctx: null,
-                        visible: true,
-                        undoStack: [],
-                        redoStack: [],
-                        opacity: 1,
-                        alphaLock: false
-                    };
-
-                    newLayer.canvas.width = canvas.width;
-                    newLayer.canvas.height = canvas.height;
-                    newLayer.ctx = newLayer.canvas.getContext('2d');
-
-                    const insertIndex = activeLayerIndex + 1;
-
-                    layers.splice(insertIndex, 0, newLayer);
-                    setActiveLayer(insertIndex);
-                    updateLayerMenu();
-                }
-
-
-
-
-                // Function to update the layer menu dynamically
-                function updateLayerMenu() {
-                    const layerContent = document.getElementById("layerContent");
-                    layerContent.innerHTML = ''; // Clear previous layers
-
-                    //  Loop in REVERSE so newest layers appear first (on top)
-                    [...layers].reverse().forEach((layer, visualIndex) => {
-                        const actualIndex = layers.length - 1 - visualIndex;
-
-                        const layerDiv = document.createElement('div');
-                        layerDiv.classList.add('layer-item');
-                        layerDiv.style.display = "grid";
-                        layerDiv.style.gridTemplateColumns = "auto 1fr auto";
-                        layerDiv.style.alignItems = "center";
-                        layerDiv.style.columnGap = "6px";
-
-                        // Enable dragging
-                        layerDiv.setAttribute("draggable", actualIndex !== 0);
-
-
-                        layerDiv.addEventListener("dragstart", (e) => {
-                            dragSrcIndex = actualIndex;
-                            e.dataTransfer.effectAllowed = "move";
-                        });
-
-                        layerDiv.addEventListener("dragover", (e) => {
-                            e.preventDefault(); // Allow drop
-                            dragOverIndex = actualIndex;
-
-                            // Add placeholder if it doesn't exist
-                            const existing = document.querySelector(".layer-placeholder");
-                            if (!existing) {
-                                const placeholder = document.createElement("div");
-                                placeholder.className = "layer-placeholder";
-                                layerDiv.parentNode.insertBefore(placeholder, layerDiv.nextSibling);
-                            }
-                        });
-
-                        layerDiv.addEventListener("dragleave", () => {
-                            const placeholder = document.querySelector(".layer-placeholder");
-                            if (placeholder) placeholder.remove();
-                        });
-
-                        layerDiv.addEventListener("drop", (e) => {
-                            e.preventDefault();
-                            const placeholder = document.querySelector(".layer-placeholder");
-                            if (placeholder) placeholder.remove();
-
-                            if (
-                                dragSrcIndex !== null &&
-                                dragOverIndex !== null &&
-                                dragSrcIndex !== dragOverIndex
-                            ) {
-                                moveLayer(dragSrcIndex, dragOverIndex);
-                            }
-
-                            dragSrcIndex = null;
-                            dragOverIndex = null;
-                        });
-
-                        layerDiv.addEventListener("dragend", () => {
-                            const placeholder = document.querySelector(".layer-placeholder");
-                            if (placeholder) placeholder.remove();
-                        });
-
-                        if (actualIndex === activeLayerIndex) {
-                            layerDiv.classList.add('selected');
+                <!-- 🌈 Color picker -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="colorPicker" style="margin: 0;">Color:</label>
+                    <input type="color" id="colorPicker" value="#000000" />
+                </div>
+
+                <!-- ✍️ Tool icons -->
+                <div class="tool-grid">
+                    <img id="brush" src="brush.png" title="Brush Tool" />
+                    <img id="eraser" src="eraser.png" title="Eraser Tool" />
+                    <img id="eyedropper" src="eyedropper.png" title="Eyedropper Tool" />
+                    <img id="bucket" src="bucket.png" title="Bucket Tool" />
+                </div>
+
+                <!-- ✅ Contiguous checkbox -->
+                <div style="margin-top: -6px; margin-bottom: 4px; font-size: 12px;">
+                    <label style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <input type="checkbox" id="contiguousToggle" checked />
+                        Contiguous
+                    </label>
+                </div>
+
+                <div class="undo-redo" style="margin-top: -4px;">
+                    <img id="undo" src="undo.png" alt="Undo" title="Undo" />
+                    <img id="redo" src="redo.png" alt="Redo" title="Redo" />
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+                <script>
+                    const canvas = document.getElementById("canvas");
+                    const ctx = canvas.getContext("2d");
+                    const undoButton = document.getElementById("undo");
+                    const redoButton = document.getElementById("redo");
+                    const brushSizeInput = document.getElementById("brushSize");
+                    const opacitySlider = document.getElementById("opacitySlider");
+                    const opacityValue = document.getElementById("opacityValue");
+                    const sizeLabel = document.getElementById("sizeLabel");
+                    const colorPicker = document.getElementById("colorPicker");
+                    const eraserIcon = document.getElementById("eraser");
+                    const contiguousToggle = document.getElementById("contiguousToggle");
+                    const brushIcon = document.getElementById("brush");
+                    const eyedropperIcon = document.getElementById("eyedropper");
+                    const bucketIcon = document.getElementById("bucket");
+                    const submitButton = document.getElementById("submit");
+                    const toggleLayerMenu = document.getElementById("toggleLayerMenu");
+                    const layerMenu = document.getElementById("layerMenu");
+                    const eraserSizeInput = document.getElementById("eraserSize");
+                    const brushSizeLabel = document.getElementById("brushSizeLabel");
+                    const eraserSizeLabel = document.getElementById("eraserSizeLabel");
+
+                    // Initialize layers array with a background layer
+                    let activeLayerIndex = 0;
+                    let dragSrcIndex = null;
+                    let dragOverIndex = null;
+
+                    let layers = [
+                        {
+                            name: 'Background',
+                            canvas: document.createElement('canvas'),
+                            ctx: null,
+                            visible: true,
+                            undoStack: [],
+                            redoStack: [],
+                            opacity: 1,
+                            alphaLock: false
                         }
+                    ];
 
-                        //  Grid layout
-                        layerDiv.style.display = 'grid';
-                        layerDiv.style.gridTemplateColumns = "auto auto 1fr auto";
-                        layerDiv.style.alignItems = 'center';
-                        layerDiv.style.columnGap = '6px';
-                        layerDiv.style.marginBottom = '6px';
 
-                        //  Thumbnail
-                        const thumb = document.createElement('canvas');
-                        const thumbWidth = 32;
-                        const thumbHeight = 24;
-                        thumb.width = thumbHeight;
-                        thumb.height = thumbHeight;
 
-                        thumb.style.width = `${thumbWidth}px`;
-                        thumb.style.height = `${thumbHeight}px`;
-                        thumb.style.border = '1px solid #aaa';
-                        thumb.style.background = '#fff';
-                        thumb.style.imageRendering = 'pixelated';
-                        thumb.style.flexShrink = '0';
 
-                        const thumbCtx = thumb.getContext("2d");
-                        thumbCtx.imageSmoothingEnabled = false;
-                        thumbCtx.clearRect(0, 0, thumb.width, thumb.height);
-                        const preview = document.createElement('canvas');
-                        preview.width = thumb.width;
-                        preview.height = thumb.height;
-                        const previewCtx = preview.getContext('2d');
-                        previewCtx.imageSmoothingEnabled = true;
-                        previewCtx.drawImage(layer.canvas, 0, 0, preview.width, preview.height);
 
-                        //  Visibility toggle using emoji
-                        const visibilityToggle = document.createElement('span');
-                        visibilityToggle.textContent = layer.visible ? "👁️" : "🚫";
-                        visibilityToggle.title = layer.visible ? "Visible" : "Hidden";
-                        visibilityToggle.style.cursor = "pointer";
-                        visibilityToggle.style.fontSize = "14px";
-                        visibilityToggle.style.userSelect = "none";
-                        visibilityToggle.style.flexShrink = "0";
+                    // Set canvas dimensions for the background layer
+                    layers[0].canvas.width = canvas.width;
+                    layers[0].canvas.height = canvas.height;
+                    layers[0].ctx = layers[0].canvas.getContext('2d');
+                    setActiveLayer(0);        // Use the background as the active layer
+                    updateLayerMenu();        // Show the background layer in the UI
 
-                        visibilityToggle.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            toggleLayerVisibility(actualIndex);
-                            visibilityToggle.textContent = layers[actualIndex].visible ? "👁️" : "🚫";
-                            visibilityToggle.title = layers[actualIndex].visible ? "Visible" : "Hidden";
-                        });
 
-                        //  Alpha Lock emoji toggle
-                        const alphaLockToggle = document.createElement("img");
-                        alphaLockToggle.src = layer.alphaLock ? "lock.png" : "unlock.png";
-                        alphaLockToggle.alt = "Alpha Lock Toggle";
-                        alphaLockToggle.style.width = "18px";
-                        alphaLockToggle.style.height = "18px";
-                        alphaLockToggle.style.cursor = "pointer";
-                        alphaLockToggle.style.flexShrink = "0";
-                        if (actualIndex === 0) {
-                            alphaLockToggle.style.opacity = "0.4";
-                            alphaLockToggle.style.pointerEvents = "none";
-                            alphaLockToggle.title = "Alpha Lock disabled on background layer";
+
+
+                    document.getElementById("addLayer").addEventListener("click", addNewDrawingLayer);
+                    document.getElementById("deleteLayer").addEventListener("click", () => {
+                        if (activeLayerIndex === 0) {
+                            alert("You can't delete the background layer!");
+                            return;
+                        }
+                        deleteLayer(activeLayerIndex);
+                    });
+
+
+                    // Function to toggle visibility of layers
+                    function toggleLayerVisibility(index) {
+                        layers[index].visible = !layers[index].visible;
+                        renderAllLayers();
+                        updateLayerMenu();
+                    }
+
+
+                    function setActiveLayer(index) {
+                        activeLayerIndex = index;
+                        renderAllLayers();
+                        updateLayerMenu();
+
+                        if (index === 0) {
+                            opacitySlider.disabled = true;
+                            opacitySlider.value = 1;
+                            opacityValue.textContent = "100%";
                         } else {
-
+                            opacitySlider.disabled = false;
+                            opacitySlider.value = layers[index].opacity;
+                            opacityValue.textContent = Math.round(layers[index].opacity * 100) + "%";
                         }
 
+                    }
 
-                        //  Stack visibility + alpha lock vertically
-                        const toggleWrapper = document.createElement("div");
-                        toggleWrapper.style.display = "flex";
-                        toggleWrapper.style.flexDirection = "column";
-                        toggleWrapper.style.alignItems = "center";
-                        toggleWrapper.style.gap = "4px";
-                        toggleWrapper.style.flexShrink = "0";
-                        toggleWrapper.appendChild(visibilityToggle);
-                        toggleWrapper.appendChild(alphaLockToggle);
+                    function moveLayer(fromIndex, toIndex) {
+                        if (fromIndex === 0 || toIndex === 0) return;
+                        if (toIndex < 0 || toIndex >= layers.length || fromIndex === toIndex) return;
+
+                        const layer = layers.splice(fromIndex, 1)[0];
+                        layers.splice(toIndex, 0, layer);
+
+                        // Adjust active layer index if necessary
+                        if (activeLayerIndex === fromIndex) {
+                            activeLayerIndex = toIndex;
+                        } else if (activeLayerIndex > fromIndex && activeLayerIndex <= toIndex) {
+                            activeLayerIndex -= 1;
+                        } else if (activeLayerIndex < fromIndex && activeLayerIndex >= toIndex) {
+                            activeLayerIndex += 1;
+                        }
+
+                        renderAllLayers();
+                        updateLayerMenu();
+                    }
+
+                    function deleteLayer(index) {
+                        if (index === 0) return; // Don't delete background
+
+                        layers.splice(index, 1); // Remove the layer
+
+                        // Adjust active layer index if needed
+                        if (activeLayerIndex >= index) {
+                            activeLayerIndex = Math.max(0, activeLayerIndex - 1);
+                        }
+
+                        updateLayerMenu();     // Refresh UI
+                        renderAllLayers();     // Redraw canvas
+                    }
 
 
-                        // Tooltip tracking
-                        const tooltip = document.getElementById("alphaTooltip");
 
-                        alphaLockToggle.addEventListener("mouseenter", () => {
-                            tooltip.style.display = "block";
-                        });
-                        alphaLockToggle.addEventListener("mousemove", (e) => {
-                            tooltip.style.left = `${e.clientX + 12}px`;
-                            tooltip.style.top = `${e.clientY + 12}px`;
-                        });
-                        alphaLockToggle.addEventListener("mouseleave", () => {
-                            tooltip.style.display = "none";
-                        });
+                    function addNewDrawingLayer() {
+                        const newLayer = {
+                            name: `Layer ${layers.length - 1}`,
+                            canvas: document.createElement('canvas'),
+                            ctx: null,
+                            visible: true,
+                            undoStack: [],
+                            redoStack: [],
+                            opacity: 1,
+                            alphaLock: false
+                        };
 
-                        alphaLockToggle.addEventListener("click", () => {
-                            if (actualIndex === 0) return; // Disable toggle on background
-                            layer.alphaLock = !layer.alphaLock;
+                        newLayer.canvas.width = canvas.width;
+                        newLayer.canvas.height = canvas.height;
+                        newLayer.ctx = newLayer.canvas.getContext('2d');
+
+                        const insertIndex = activeLayerIndex + 1;
+
+                        layers.splice(insertIndex, 0, newLayer);
+                        setActiveLayer(insertIndex);
+                        updateLayerMenu();
+                    }
+
+
+
+
+                    // Function to update the layer menu dynamically
+                    function updateLayerMenu() {
+                        const layerContent = document.getElementById("layerContent");
+                        layerContent.innerHTML = ''; // Clear previous layers
+
+                        //  Loop in REVERSE so newest layers appear first (on top)
+                        [...layers].reverse().forEach((layer, visualIndex) => {
+                            const actualIndex = layers.length - 1 - visualIndex;
+
+                            const layerDiv = document.createElement('div');
+                            layerDiv.classList.add('layer-item');
+                            layerDiv.style.display = "grid";
+                            layerDiv.style.gridTemplateColumns = "auto 1fr auto";
+                            layerDiv.style.alignItems = "center";
+                            layerDiv.style.columnGap = "6px";
+
+                            // Enable dragging
+                            layerDiv.setAttribute("draggable", actualIndex !== 0);
+
+
+                            layerDiv.addEventListener("dragstart", (e) => {
+                                dragSrcIndex = actualIndex;
+                                e.dataTransfer.effectAllowed = "move";
+                            });
+
+                            layerDiv.addEventListener("dragover", (e) => {
+                                e.preventDefault(); // Allow drop
+                                dragOverIndex = actualIndex;
+
+                                // Add placeholder if it doesn't exist
+                                const existing = document.querySelector(".layer-placeholder");
+                                if (!existing) {
+                                    const placeholder = document.createElement("div");
+                                    placeholder.className = "layer-placeholder";
+                                    layerDiv.parentNode.insertBefore(placeholder, layerDiv.nextSibling);
+                                }
+                            });
+
+                            layerDiv.addEventListener("dragleave", () => {
+                                const placeholder = document.querySelector(".layer-placeholder");
+                                if (placeholder) placeholder.remove();
+                            });
+
+                            layerDiv.addEventListener("drop", (e) => {
+                                e.preventDefault();
+                                const placeholder = document.querySelector(".layer-placeholder");
+                                if (placeholder) placeholder.remove();
+
+                                if (
+                                    dragSrcIndex !== null &&
+                                    dragOverIndex !== null &&
+                                    dragSrcIndex !== dragOverIndex
+                                ) {
+                                    moveLayer(dragSrcIndex, dragOverIndex);
+                                }
+
+                                dragSrcIndex = null;
+                                dragOverIndex = null;
+                            });
+
+                            layerDiv.addEventListener("dragend", () => {
+                                const placeholder = document.querySelector(".layer-placeholder");
+                                if (placeholder) placeholder.remove();
+                            });
+
+                            if (actualIndex === activeLayerIndex) {
+                                layerDiv.classList.add('selected');
+                            }
+
+                            //  Grid layout
+                            layerDiv.style.display = 'grid';
+                            layerDiv.style.gridTemplateColumns = "auto auto 1fr auto";
+                            layerDiv.style.alignItems = 'center';
+                            layerDiv.style.columnGap = '6px';
+                            layerDiv.style.marginBottom = '6px';
+
+                            //  Thumbnail
+                            const thumb = document.createElement('canvas');
+                            const thumbWidth = 32;
+                            const thumbHeight = 24;
+                            thumb.width = thumbHeight;
+                            thumb.height = thumbHeight;
+
+                            thumb.style.width = `${thumbWidth}px`;
+                            thumb.style.height = `${thumbHeight}px`;
+                            thumb.style.border = '1px solid #aaa';
+                            thumb.style.background = '#fff';
+                            thumb.style.imageRendering = 'pixelated';
+                            thumb.style.flexShrink = '0';
+
+                            const thumbCtx = thumb.getContext("2d");
+                            thumbCtx.imageSmoothingEnabled = false;
+                            thumbCtx.clearRect(0, 0, thumb.width, thumb.height);
+                            const preview = document.createElement('canvas');
+                            preview.width = thumb.width;
+                            preview.height = thumb.height;
+                            const previewCtx = preview.getContext('2d');
+                            previewCtx.imageSmoothingEnabled = true;
+                            previewCtx.drawImage(layer.canvas, 0, 0, preview.width, preview.height);
+
+                            //  Visibility toggle using emoji
+                            const visibilityToggle = document.createElement('span');
+                            visibilityToggle.textContent = layer.visible ? "👁️" : "🚫";
+                            visibilityToggle.title = layer.visible ? "Visible" : "Hidden";
+                            visibilityToggle.style.cursor = "pointer";
+                            visibilityToggle.style.fontSize = "14px";
+                            visibilityToggle.style.userSelect = "none";
+                            visibilityToggle.style.flexShrink = "0";
+
+                            visibilityToggle.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                toggleLayerVisibility(actualIndex);
+                                visibilityToggle.textContent = layers[actualIndex].visible ? "👁️" : "🚫";
+                                visibilityToggle.title = layers[actualIndex].visible ? "Visible" : "Hidden";
+                            });
+
+                            //  Alpha Lock emoji toggle
+                            const alphaLockToggle = document.createElement("img");
                             alphaLockToggle.src = layer.alphaLock ? "lock.png" : "unlock.png";
+                            alphaLockToggle.alt = "Alpha Lock Toggle";
+                            alphaLockToggle.style.width = "18px";
+                            alphaLockToggle.style.height = "18px";
+                            alphaLockToggle.style.cursor = "pointer";
+                            alphaLockToggle.style.flexShrink = "0";
                             if (actualIndex === 0) {
-                                alphaLockToggle.style.opacity = 0.3;
-                                alphaLockToggle.style.cursor = "not-allowed";
+                                alphaLockToggle.style.opacity = "0.4";
+                                alphaLockToggle.style.pointerEvents = "none";
                                 alphaLockToggle.title = "Alpha Lock disabled on background layer";
                             } else {
-                                alphaLockToggle.title = "Toggle Alpha Lock";
+
                             }
 
-                        });
+
+                            //  Stack visibility + alpha lock vertically
+                            const toggleWrapper = document.createElement("div");
+                            toggleWrapper.style.display = "flex";
+                            toggleWrapper.style.flexDirection = "column";
+                            toggleWrapper.style.alignItems = "center";
+                            toggleWrapper.style.gap = "4px";
+                            toggleWrapper.style.flexShrink = "0";
+                            toggleWrapper.appendChild(visibilityToggle);
+                            toggleWrapper.appendChild(alphaLockToggle);
 
 
+                            // Tooltip tracking
+                            const tooltip = document.getElementById("alphaTooltip");
 
+                            alphaLockToggle.addEventListener("mouseenter", () => {
+                                tooltip.style.display = "block";
+                            });
+                            alphaLockToggle.addEventListener("mousemove", (e) => {
+                                tooltip.style.left = `${e.clientX + 12}px`;
+                                tooltip.style.top = `${e.clientY + 12}px`;
+                            });
+                            alphaLockToggle.addEventListener("mouseleave", () => {
+                                tooltip.style.display = "none";
+                            });
 
-
-
-                        // Layer label (renameable)
-                        const labelWrapper = document.createElement('div');
-                        labelWrapper.classList.add('layer-label');
-                        labelWrapper.textContent = layer.name;
-                        labelWrapper.title = "Double click to rename";
-
-                        // prettier up/down arrows
-                        const arrowWrapper = document.createElement("div");
-
-
-                        arrowWrapper.className = "layer-arrows";
-
-                        const upBtn = document.createElement("button");
-                        const downBtn = document.createElement("button");
-
-
-                        upBtn.textContent = "⬆️";
-                        downBtn.textContent = "⬇️";
-
-                        upBtn.title = "Move layer up";
-                        downBtn.title = "Move layer down";
-
-                        if (actualIndex === 0) {
-                            upBtn.disabled = true;
-                            downBtn.disabled = true;
-                            upBtn.style.opacity = 0.3;
-                            downBtn.style.opacity = 0.3;
-                            upBtn.style.cursor = "not-allowed";
-                            downBtn.style.cursor = "not-allowed";
-                        }
-
-                        upBtn.addEventListener("click", (e) => {
-                            e.stopPropagation();
-                            moveLayer(actualIndex, actualIndex + 1);
-                        });
-
-                        downBtn.addEventListener("click", (e) => {
-                            e.stopPropagation();
-                            moveLayer(actualIndex, actualIndex - 1);
-                        });
-
-
-
-                        arrowWrapper.appendChild(upBtn);
-                        arrowWrapper.appendChild(downBtn);
-
-
-                        labelWrapper.style.cursor = 'text';
-                        labelWrapper.style.flexGrow = '0';
-                        labelWrapper.style.width = 'fit-content';
-                        labelWrapper.style.whiteSpace = 'nowrap';
-                        labelWrapper.style.overflow = 'hidden';
-                        labelWrapper.style.textOverflow = 'ellipsis';
-                        labelWrapper.style.maxWidth = '100px';
-
-                        labelWrapper.addEventListener('dblclick', (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-
-                            const input = document.createElement('input');
-                            input.type = 'text';
-                            input.value = layer.name;
-                            input.style.width = '100%';
-                            input.style.boxSizing = 'border-box';
-                            input.style.fontSize = 'inherit';
-                            input.style.border = '1px solid #ccc';
-                            input.style.borderRadius = '4px';
-                            input.style.padding = '2px 4px';
-
-                            labelWrapper.replaceChildren(input);
-                            input.focus();
-
-                            function commitRename() {
-                                const newName = input.value.trim();
-                                if (newName) {
-                                    layer.name = newName;
+                            alphaLockToggle.addEventListener("click", () => {
+                                if (actualIndex === 0) return; // Disable toggle on background
+                                layer.alphaLock = !layer.alphaLock;
+                                alphaLockToggle.src = layer.alphaLock ? "lock.png" : "unlock.png";
+                                if (actualIndex === 0) {
+                                    alphaLockToggle.style.opacity = 0.3;
+                                    alphaLockToggle.style.cursor = "not-allowed";
+                                    alphaLockToggle.title = "Alpha Lock disabled on background layer";
+                                } else {
+                                    alphaLockToggle.title = "Toggle Alpha Lock";
                                 }
-                                updateLayerMenu();
+
+                            });
+
+
+
+
+
+
+                            // Layer label (renameable)
+                            const labelWrapper = document.createElement('div');
+                            labelWrapper.classList.add('layer-label');
+                            labelWrapper.textContent = layer.name;
+                            labelWrapper.title = "Double click to rename";
+
+                            // prettier up/down arrows
+                            const arrowWrapper = document.createElement("div");
+
+
+                            arrowWrapper.className = "layer-arrows";
+
+                            const upBtn = document.createElement("button");
+                            const downBtn = document.createElement("button");
+
+
+                            upBtn.textContent = "⬆️";
+                            downBtn.textContent = "⬇️";
+
+                            upBtn.title = "Move layer up";
+                            downBtn.title = "Move layer down";
+
+                            if (actualIndex === 0) {
+                                upBtn.disabled = true;
+                                downBtn.disabled = true;
+                                upBtn.style.opacity = 0.3;
+                                downBtn.style.opacity = 0.3;
+                                upBtn.style.cursor = "not-allowed";
+                                downBtn.style.cursor = "not-allowed";
                             }
 
-                            input.addEventListener('blur', commitRename);
-                            input.addEventListener('keydown', (e) => {
-                                if (e.key === 'Enter') input.blur();
-                                if (e.key === 'Escape') updateLayerMenu();
+                            upBtn.addEventListener("click", (e) => {
+                                e.stopPropagation();
+                                moveLayer(actualIndex, actualIndex + 1);
+                            });
+
+                            downBtn.addEventListener("click", (e) => {
+                                e.stopPropagation();
+                                moveLayer(actualIndex, actualIndex - 1);
+                            });
+
+
+
+                            arrowWrapper.appendChild(upBtn);
+                            arrowWrapper.appendChild(downBtn);
+
+
+                            labelWrapper.style.cursor = 'text';
+                            labelWrapper.style.flexGrow = '0';
+                            labelWrapper.style.width = 'fit-content';
+                            labelWrapper.style.whiteSpace = 'nowrap';
+                            labelWrapper.style.overflow = 'hidden';
+                            labelWrapper.style.textOverflow = 'ellipsis';
+                            labelWrapper.style.maxWidth = '100px';
+
+                            labelWrapper.addEventListener('dblclick', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.value = layer.name;
+                                input.style.width = '100%';
+                                input.style.boxSizing = 'border-box';
+                                input.style.fontSize = 'inherit';
+                                input.style.border = '1px solid #ccc';
+                                input.style.borderRadius = '4px';
+                                input.style.padding = '2px 4px';
+
+                                labelWrapper.replaceChildren(input);
+                                input.focus();
+
+                                function commitRename() {
+                                    const newName = input.value.trim();
+                                    if (newName) {
+                                        layer.name = newName;
+                                    }
+                                    updateLayerMenu();
+                                }
+
+                                input.addEventListener('blur', commitRename);
+                                input.addEventListener('keydown', (e) => {
+                                    if (e.key === 'Enter') input.blur();
+                                    if (e.key === 'Escape') updateLayerMenu();
+                                });
+                            });
+
+
+                            //  Clicking anywhere on the row (except checkbox) sets it active
+                            let clickTimeout = null;
+
+                            layerDiv.addEventListener('click', (e) => {
+                                // Ignore clicks on interactive controls
+                                const isControl = e.target.closest("button") || e.target.closest("span") || e.target.closest("img");
+                                if (isControl) return;
+
+                                if (clickTimeout) {
+                                    clearTimeout(clickTimeout);
+                                    clickTimeout = null;
+                                    return;
+                                }
+
+                                clickTimeout = setTimeout(() => {
+                                    setActiveLayer(actualIndex);
+                                    clickTimeout = null;
+                                }, 250);
+                            });
+
+
+
+                            //  Assemble UI
+                            layerDiv.appendChild(thumb);
+                            layerDiv.appendChild(toggleWrapper);
+                            layerDiv.appendChild(labelWrapper);
+                            layerDiv.appendChild(arrowWrapper);
+
+
+                            layerContent.appendChild(layerDiv);
+                        });
+
+                        updateLayerThumbnails();
+                    }
+
+
+                    opacitySlider.addEventListener("input", () => {
+                        if (activeLayerIndex === 0) return;
+                        const val = parseFloat(opacitySlider.value);
+                        layers[activeLayerIndex].opacity = val;
+                        opacityValue.textContent = Math.round(val * 100) + "%";
+                        renderAllLayers();
+                    });
+
+
+
+                    function updateLayerThumbnails() {
+                        const thumbnails = document.querySelectorAll(".layer-item canvas");
+
+                        [...layers].reverse().forEach((layer, visualIndex) => {
+                            const thumb = thumbnails[visualIndex];
+                            const ctx = thumb.getContext("2d");
+                            ctx.imageSmoothingEnabled = false;
+                            ctx.clearRect(0, 0, thumb.width, thumb.height);
+                            ctx.drawImage(layer.canvas, 0, 0, thumb.width, thumb.height);
+                        });
+                    }
+
+                    function makeSizeEditable(spanId, sliderId) {
+                        const span = document.getElementById(spanId);
+                        const slider = document.getElementById(sliderId);
+
+                        span.addEventListener("dblclick", () => {
+                            const input = document.createElement("input");
+                            input.type = "number";
+                            input.min = slider.min;
+                            input.max = slider.max;
+                            input.value = slider.value;
+                            input.style.width = "40px";
+                            input.style.fontSize = "inherit";
+                            input.style.textAlign = "center";
+                            input.style.border = "1px solid #ccc";
+                            input.style.borderRadius = "4px";
+
+                            span.replaceWith(input);
+                            input.focus();
+                            input.select();
+
+                            function finish() {
+                                let val = parseInt(input.value);
+                                if (isNaN(val)) val = parseInt(slider.value);
+                                val = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), val));
+                                slider.value = val;
+                                span.textContent = val;
+                                input.replaceWith(span);
+
+                                // Update brushSize if this tool is active
+                                if ((sliderId === "brushSize" && !isEraser) ||
+                                    (sliderId === "eraserSize" && isEraser)) {
+                                    brushSize = val;
+                                }
+                            }
+
+                            input.addEventListener("blur", finish);
+                            input.addEventListener("keydown", (e) => {
+                                if (e.key === "Enter") input.blur();
+                                if (e.key === "Escape") input.replaceWith(span);
                             });
                         });
 
-
-                        //  Clicking anywhere on the row (except checkbox) sets it active
-                        let clickTimeout = null;
-
-                        layerDiv.addEventListener('click', (e) => {
-                            // Ignore clicks on interactive controls
-                            const isControl = e.target.closest("button") || e.target.closest("span") || e.target.closest("img");
-                            if (isControl) return;
-
-                            if (clickTimeout) {
-                                clearTimeout(clickTimeout);
-                                clickTimeout = null;
-                                return;
-                            }
-
-                            clickTimeout = setTimeout(() => {
-                                setActiveLayer(actualIndex);
-                                clickTimeout = null;
-                            }, 250);
+                        // Highlight label on hover
+                        span.addEventListener("mouseenter", () => {
+                            span.style.background = "#ff9cb1";
+                            span.style.borderRadius = "4px";
+                            span.style.padding = "2px 6px";
                         });
-
-
-
-                        //  Assemble UI
-                        layerDiv.appendChild(thumb);
-                        layerDiv.appendChild(toggleWrapper);
-                        layerDiv.appendChild(labelWrapper);
-                        layerDiv.appendChild(arrowWrapper);
-
-
-                        layerContent.appendChild(layerDiv);
-                    });
-
-                    updateLayerThumbnails();
-                }
-
-
-                opacitySlider.addEventListener("input", () => {
-                    if (activeLayerIndex === 0) return;
-                    const val = parseFloat(opacitySlider.value);
-                    layers[activeLayerIndex].opacity = val;
-                    opacityValue.textContent = Math.round(val * 100) + "%";
-                    renderAllLayers();
-                });
-
-
-
-                function updateLayerThumbnails() {
-                    const thumbnails = document.querySelectorAll(".layer-item canvas");
-
-                    [...layers].reverse().forEach((layer, visualIndex) => {
-                        const thumb = thumbnails[visualIndex];
-                        const ctx = thumb.getContext("2d");
-                        ctx.imageSmoothingEnabled = false;
-                        ctx.clearRect(0, 0, thumb.width, thumb.height);
-                        ctx.drawImage(layer.canvas, 0, 0, thumb.width, thumb.height);
-                    });
-                }
-
-                function makeSizeEditable(spanId, sliderId) {
-                    const span = document.getElementById(spanId);
-                    const slider = document.getElementById(sliderId);
-
-                    span.addEventListener("dblclick", () => {
-                        const input = document.createElement("input");
-                        input.type = "number";
-                        input.min = slider.min;
-                        input.max = slider.max;
-                        input.value = slider.value;
-                        input.style.width = "40px";
-                        input.style.fontSize = "inherit";
-                        input.style.textAlign = "center";
-                        input.style.border = "1px solid #ccc";
-                        input.style.borderRadius = "4px";
-
-                        span.replaceWith(input);
-                        input.focus();
-                        input.select();
-
-                        function finish() {
-                            let val = parseInt(input.value);
-                            if (isNaN(val)) val = parseInt(slider.value);
-                            val = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), val));
-                            slider.value = val;
-                            span.textContent = val;
-                            input.replaceWith(span);
-
-                            // Update brushSize if this tool is active
-                            if ((sliderId === "brushSize" && !isEraser) ||
-                                (sliderId === "eraserSize" && isEraser)) {
-                                brushSize = val;
-                            }
-                        }
-
-                        input.addEventListener("blur", finish);
-                        input.addEventListener("keydown", (e) => {
-                            if (e.key === "Enter") input.blur();
-                            if (e.key === "Escape") input.replaceWith(span);
+                        span.addEventListener("mouseleave", () => {
+                            span.style.background = "";
+                            span.style.padding = "";
                         });
-                    });
-
-                    // Highlight label on hover
-                    span.addEventListener("mouseenter", () => {
-                        span.style.background = "#ff9cb1";
-                        span.style.borderRadius = "4px";
-                        span.style.padding = "2px 6px";
-                    });
-                    span.addEventListener("mouseleave", () => {
-                        span.style.background = "";
-                        span.style.padding = "";
-                    });
-                }
-
-                window.onload = () => {
-                    fillCanvasWhite();
-                    saveDrawingState();
-                    renderAllLayers();
-                    makeSizeEditable("brushSizeLabel", "brushSize");
-                    makeSizeEditable("eraserSizeLabel", "eraserSize");
-                };
-
-
-
-                // Draw something on the background layer
-                layers[0].ctx.fillStyle = "#FFFFFF";
-                layers[0].ctx.fillRect(0, 0, layers[0].canvas.width, layers[0].canvas.height);
-
-
-
-
-
-
-
-                let isDrawing = false;
-                let mouseDown = false;
-                let lastX = 0;
-                let lastY = 0;
-                let brushSize = 2;
-                let brushColor = "#000000";
-                let isEraser = false;
-                let hasDrawn = false;
-                let isEyedropper = false;
-                let isBucket = false;
-                // Default to drawing layer
-
-                function fillCanvasWhite() {
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                }
-                function renderAllLayers() {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                    // Draw from bottom layer to top — assuming layer[0] is bottom
-                    for (let i = 0; i < layers.length; i++) {
-                        if (layers[i].visible) {
-                            ctx.globalAlpha = layers[i].opacity;
-                            ctx.drawImage(layers[i].canvas, 0, 0);
-                        }
                     }
-                    ctx.globalAlpha = 1;
 
-                }
-
-
-
-
-                function saveDrawingState() {
-                    const layer = layers[activeLayerIndex];
-                    const imgData = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    layer.undoStack.push(imgData);
-                    // Clear redo stack when new state is added
-                    layer.redoStack = [];
-                }
+                    window.onload = () => {
+                        fillCanvasWhite();
+                        saveDrawingState();
+                        renderAllLayers();
+                        makeSizeEditable("brushSizeLabel", "brushSize");
+                        makeSizeEditable("eraserSizeLabel", "eraserSize");
+                    };
 
 
 
+                    // Draw something on the background layer
+                    layers[0].ctx.fillStyle = "#FFFFFF";
+                    layers[0].ctx.fillRect(0, 0, layers[0].canvas.width, layers[0].canvas.height);
 
-                function startDrawing(x, y) {
-                    isDrawing = true;
-                    mouseDown = true;
-                    hasDrawn = false;
-                    [lastX, lastY] = [x, y];
 
-                    if (isEyedropper) {
-                        handleToolClick(Math.floor(x), Math.floor(y));
-                    } else if (isBucket) {
+
+
+
+
+
+                    let isDrawing = false;
+                    let mouseDown = false;
+                    let lastX = 0;
+                    let lastY = 0;
+                    let brushSize = 2;
+                    let brushColor = "#000000";
+                    let isEraser = false;
+                    let hasDrawn = false;
+                    let isEyedropper = false;
+                    let isBucket = false;
+                    // Default to drawing layer
+
+                    function fillCanvasWhite() {
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                    function renderAllLayers() {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                        // Draw from bottom layer to top — assuming layer[0] is bottom
+                        for (let i = 0; i < layers.length; i++) {
+                            if (layers[i].visible) {
+                                ctx.globalAlpha = layers[i].opacity;
+                                ctx.drawImage(layers[i].canvas, 0, 0);
+                            }
+                        }
+                        ctx.globalAlpha = 1;
+
+                    }
+
+
+
+
+                    function saveDrawingState() {
                         const layer = layers[activeLayerIndex];
-                        const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        layer.undoStack.push(currentState);
-                        layer.redoStack = [];
-                        handleToolClick(Math.floor(x), Math.floor(y));
-                    } else {
-                        // For regular drawing/erasing, save state at the beginning
-                        const layer = layers[activeLayerIndex];
-                        const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        layer.undoStack.push(currentState);
+                        const imgData = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        layer.undoStack.push(imgData);
+                        // Clear redo stack when new state is added
                         layer.redoStack = [];
                     }
-                }
 
-                function draw(x, y) {
-                    if (isEyedropper || isBucket || !isDrawing) return;
 
-                    hasDrawn = true;
 
-                    const layer = layers[activeLayerIndex];
-                    const layerCtx = layer.ctx;
 
-                    if (layer.alphaLock) {
-                        const strokeCanvas = document.createElement("canvas");
-                        strokeCanvas.width = canvas.width;
-                        strokeCanvas.height = canvas.height;
-                        const strokeCtx = strokeCanvas.getContext("2d");
+                    function startDrawing(x, y) {
+                        isDrawing = true;
+                        mouseDown = true;
+                        hasDrawn = false;
+                        [lastX, lastY] = [x, y];
 
-                        // Draw the stroke onto the stroke canvas
-                        strokeCtx.imageSmoothingEnabled = false;
-                        strokeCtx.lineCap = "round";
-                        strokeCtx.lineJoin = "round";
-                        strokeCtx.lineWidth = brushSize;
-                        strokeCtx.strokeStyle = isEraser ? "rgba(0,0,0,1)" : brushColor;
-                        strokeCtx.beginPath();
-                        strokeCtx.moveTo(lastX, lastY);
-                        strokeCtx.lineTo(x, y);
-                        strokeCtx.stroke();
+                        if (isEyedropper) {
+                            handleToolClick(Math.floor(x), Math.floor(y));
+                        } else if (isBucket) {
+                            const layer = layers[activeLayerIndex];
+                            const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            layer.undoStack.push(currentState);
+                            layer.redoStack = [];
+                            handleToolClick(Math.floor(x), Math.floor(y));
+                        } else {
+                            // For regular drawing/erasing, save state at the beginning
+                            const layer = layers[activeLayerIndex];
+                            const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            layer.undoStack.push(currentState);
+                            layer.redoStack = [];
+                        }
+                    }
 
-                        // Get image data from stroke and layer
-                        const strokeData = strokeCtx.getImageData(0, 0, canvas.width, canvas.height);
-                        const baseData = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    function draw(x, y) {
+                        if (isEyedropper || isBucket || !isDrawing) return;
 
-                        const sData = strokeData.data;
-                        const bData = baseData.data;
+                        hasDrawn = true;
 
-                        for (let i = 0; i < sData.length; i += 4) {
-                            const baseAlpha = bData[i + 3];
+                        const layer = layers[activeLayerIndex];
+                        const layerCtx = layer.ctx;
 
-                            if (baseAlpha === 0) {
-                                // Prevent anything from appearing outside visible areas
-                                sData[i + 3] = 0;
-                            } else if (isEraser && sData[i + 3] > 0) {
-                                // make that pixel fully transparent in the BASE layer
-                                bData[i + 0] = 0;
-                                bData[i + 1] = 0;
-                                bData[i + 2] = 0;
-                                bData[i + 3] = 0;
+                        if (layer.alphaLock) {
+                            const strokeCanvas = document.createElement("canvas");
+                            strokeCanvas.width = canvas.width;
+                            strokeCanvas.height = canvas.height;
+                            const strokeCtx = strokeCanvas.getContext("2d");
+
+                            // Draw the stroke onto the stroke canvas
+                            strokeCtx.imageSmoothingEnabled = false;
+                            strokeCtx.lineCap = "round";
+                            strokeCtx.lineJoin = "round";
+                            strokeCtx.lineWidth = brushSize;
+                            strokeCtx.strokeStyle = isEraser ? "rgba(0,0,0,1)" : brushColor;
+                            strokeCtx.beginPath();
+                            strokeCtx.moveTo(lastX, lastY);
+                            strokeCtx.lineTo(x, y);
+                            strokeCtx.stroke();
+
+                            // Get image data from stroke and layer
+                            const strokeData = strokeCtx.getImageData(0, 0, canvas.width, canvas.height);
+                            const baseData = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                            const sData = strokeData.data;
+                            const bData = baseData.data;
+
+                            for (let i = 0; i < sData.length; i += 4) {
+                                const baseAlpha = bData[i + 3];
+
+                                if (baseAlpha === 0) {
+                                    // Prevent anything from appearing outside visible areas
+                                    sData[i + 3] = 0;
+                                } else if (isEraser && sData[i + 3] > 0) {
+                                    // make that pixel fully transparent in the BASE layer
+                                    bData[i + 0] = 0;
+                                    bData[i + 1] = 0;
+                                    bData[i + 2] = 0;
+                                    bData[i + 3] = 0;
+                                }
                             }
+
+
+                            if (isEraser) {
+                                layer.ctx.putImageData(baseData, 0, 0);
+                            } else {
+                                strokeCtx.putImageData(strokeData, 0, 0);
+                                layer.ctx.globalCompositeOperation = "source-over";
+                                layer.ctx.drawImage(strokeCanvas, 0, 0);
+                            }
+
+
+                            [lastX, lastY] = [x, y];
+                            renderAllLayers();
+                            updateLayerThumbnails();
+                            return;
                         }
 
+
+
+                        // Regular drawing (no alpha lock)
+                        layerCtx.beginPath();
+                        layerCtx.moveTo(lastX, lastY);
+                        layerCtx.lineTo(x, y);
+                        layerCtx.lineWidth = brushSize;
+                        layerCtx.lineCap = "round";
 
                         if (isEraser) {
-                            layer.ctx.putImageData(baseData, 0, 0);
+                            layerCtx.globalCompositeOperation = activeLayerIndex === 0 ? "source-over" : "destination-out";
+                            layerCtx.strokeStyle = activeLayerIndex === 0 ? "#FFFFFF" : "rgba(0,0,0,1)";
                         } else {
-                            strokeCtx.putImageData(strokeData, 0, 0);
-                            layer.ctx.globalCompositeOperation = "source-over";
-                            layer.ctx.drawImage(strokeCanvas, 0, 0);
+                            layerCtx.globalCompositeOperation = "source-over";
+                            layerCtx.strokeStyle = brushColor;
                         }
 
+                        layerCtx.stroke();
 
                         [lastX, lastY] = [x, y];
                         renderAllLayers();
                         updateLayerThumbnails();
-                        return;
                     }
 
 
 
-                    // Regular drawing (no alpha lock)
-                    layerCtx.beginPath();
-                    layerCtx.moveTo(lastX, lastY);
-                    layerCtx.lineTo(x, y);
-                    layerCtx.lineWidth = brushSize;
-                    layerCtx.lineCap = "round";
+                    function stopDrawing() {
 
-                    if (isEraser) {
-                        layerCtx.globalCompositeOperation = activeLayerIndex === 0 ? "source-over" : "destination-out";
-                        layerCtx.strokeStyle = activeLayerIndex === 0 ? "#FFFFFF" : "rgba(0,0,0,1)";
-                    } else {
-                        layerCtx.globalCompositeOperation = "source-over";
-                        layerCtx.strokeStyle = brushColor;
+
+                        isDrawing = false;
+                        mouseDown = false;
                     }
 
-                    layerCtx.stroke();
 
-                    [lastX, lastY] = [x, y];
-                    renderAllLayers();
-                    updateLayerThumbnails();
-                }
+                    function floodFill(x, y, _, fillHex) {
+                        const fillRGB = hexToRgb(fillHex);
+                        const width = canvas.width;
+                        const height = canvas.height;
 
+                        const compositeCanvas = document.createElement("canvas");
+                        compositeCanvas.width = width;
+                        compositeCanvas.height = height;
+                        const compositeCtx = compositeCanvas.getContext("2d");
 
-
-                function stopDrawing() {
-
-
-                    isDrawing = false;
-                    mouseDown = false;
-                }
-
-
-                function floodFill(x, y, _, fillHex) {
-                    const fillRGB = hexToRgb(fillHex);
-                    const width = canvas.width;
-                    const height = canvas.height;
-
-                    const compositeCanvas = document.createElement("canvas");
-                    compositeCanvas.width = width;
-                    compositeCanvas.height = height;
-                    const compositeCtx = compositeCanvas.getContext("2d");
-
-                    for (let i = 0; i < layers.length; i++) {
-                        if (layers[i].visible) {
-                            compositeCtx.globalAlpha = layers[i].opacity;
-                            compositeCtx.drawImage(layers[i].canvas, 0, 0);
-                        }
-                    }
-
-                    const compositeData = compositeCtx.getImageData(0, 0, width, height).data;
-                    const layerCtx = layers[activeLayerIndex].ctx;
-                    const layerData = layerCtx.getImageData(0, 0, width, height);
-                    const data = layerData.data;
-
-                    const visited = new Uint8Array(width * height);
-                    const startIdx = (y * width + x) * 4;
-
-                    const targetColor = [
-                        compositeData[startIdx],
-                        compositeData[startIdx + 1],
-                        compositeData[startIdx + 2],
-                        compositeData[startIdx + 3]
-                    ];
-
-                    function colorAt(x, y) {
-                        const i = (y * width + x) * 4;
-                        return [
-                            compositeData[i],
-                            compositeData[i + 1],
-                            compositeData[i + 2],
-                            compositeData[i + 3]
-                        ];
-                    }
-
-                    function setColor(x, y) {
-                        const i = (y * width + x) * 4;
-                        data[i] = fillRGB[0];
-                        data[i + 1] = fillRGB[1];
-                        data[i + 2] = fillRGB[2];
-                        data[i + 3] = 255;
-                    }
-
-                    function matchColor(c1, c2) {
-                        const [r1, g1, b1, a1] = c1;
-                        const [r2, g2, b2, a2] = c2;
-                        return (
-                            Math.abs(r1 - r2) < 5 &&
-                            Math.abs(g1 - g2) < 5 &&
-                            Math.abs(b1 - b2) < 5 &&
-                            Math.abs(a1 - a2) < 5
-                        );
-                    }
-
-                    const queue = [[x, y]];
-
-                    while (queue.length > 0) {
-                        const [cx, cy] = queue.shift(); // <-- You missed this line
-                        if (cx < 0 || cy < 0 || cx >= width || cy >= height) continue;
-
-                        const idx = cy * width + cx;
-                        if (visited[idx]) continue;
-
-                        const currentColor = colorAt(cx, cy);
-                        if (!matchColor(currentColor, targetColor)) continue;
-
-                        if (layers[activeLayerIndex].alphaLock) {
-                            const alpha = data[idx * 4 + 3];
-                            if (alpha === 0) continue;
-                        }
-
-                        setColor(cx, cy);
-                        visited[idx] = 1;
-
-                        queue.push([cx + 1, cy]);
-                        queue.push([cx - 1, cy]);
-                        queue.push([cx, cy + 1]);
-                        queue.push([cx, cy - 1]);
-                    }
-
-                    // ✅ only apply image and rerender after the full fill is done
-                    layerCtx.putImageData(layerData, 0, 0);
-                    renderAllLayers();
-                    updateLayerThumbnails();
-                }
-
-
-
-
-
-
-                function hexToRgb(hex) {
-                    const r = parseInt(hex.slice(1, 3), 16);
-                    const g = parseInt(hex.slice(3, 5), 16);
-                    const b = parseInt(hex.slice(5, 7), 16);
-                    return [r, g, b];
-                }
-
-                function rgbToHex(r, g, b) {
-                    return (
-                        "#" +
-                        [r, g, b]
-                            .map((x) => {
-                                const hex = x.toString(16);
-                                return hex.length === 1 ? "0" + hex : hex;
-                            })
-                            .join("")
-                            .toUpperCase()
-                    );
-                }
-
-                function handleToolClick(x, y) {
-                    if (isEyedropper) {
-                        // Create a temporary canvas to composite visible layers
-                        const tempCanvas = document.createElement("canvas");
-                        tempCanvas.width = canvas.width;
-                        tempCanvas.height = canvas.height;
-                        const tempCtx = tempCanvas.getContext("2d");
-
-                        // Composite all visible layers from bottom to top
                         for (let i = 0; i < layers.length; i++) {
                             if (layers[i].visible) {
-                                tempCtx.drawImage(layers[i].canvas, 0, 0);
+                                compositeCtx.globalAlpha = layers[i].opacity;
+                                compositeCtx.drawImage(layers[i].canvas, 0, 0);
                             }
                         }
 
-                        // Sample pixel from merged result
-                        const pixel = tempCtx.getImageData(x, y, 1, 1).data;
-                        const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+                        const compositeData = compositeCtx.getImageData(0, 0, width, height).data;
+                        const layerCtx = layers[activeLayerIndex].ctx;
+                        const layerData = layerCtx.getImageData(0, 0, width, height);
+                        const data = layerData.data;
 
-                        brushColor = hex;
-                        colorPicker.value = hex;
-                        updateLayerThumbnails();
+                        const visited = new Uint8Array(width * height);
+                        const startIdx = (y * width + x) * 4;
 
-                        return;
-                    }
+                        const targetColor = [
+                            compositeData[startIdx],
+                            compositeData[startIdx + 1],
+                            compositeData[startIdx + 2],
+                            compositeData[startIdx + 3]
+                        ];
 
-                    if (!contiguousToggle.checked) {
-                        // Non-contiguous: fill entire canvas with brush color, including transparent areas
-                        const layer = layers[activeLayerIndex];
-                        const layerCtx = layer.ctx;
+                        function colorAt(x, y) {
+                            const i = (y * width + x) * 4;
+                            return [
+                                compositeData[i],
+                                compositeData[i + 1],
+                                compositeData[i + 2],
+                                compositeData[i + 3]
+                            ];
+                        }
 
-                        // Save current state for undo
-                        const prevState = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
-                        layer.undoStack.push(prevState);
-                        layer.redoStack = [];
-
-                        // Fill pixels in the image data
-                        const imgData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
-                        const data = imgData.data;
-                        const rgb = hexToRgb(brushColor);
-
-                        for (let i = 0; i < data.length; i += 4) {
-                            if (layer.alphaLock && data[i + 3] === 0) continue; // Skip fully transparent pixels if alpha lock
-                            data[i] = rgb[0];
-                            data[i + 1] = rgb[1];
-                            data[i + 2] = rgb[2];
+                        function setColor(x, y) {
+                            const i = (y * width + x) * 4;
+                            data[i] = fillRGB[0];
+                            data[i + 1] = fillRGB[1];
+                            data[i + 2] = fillRGB[2];
                             data[i + 3] = 255;
                         }
 
+                        function matchColor(c1, c2) {
+                            const [r1, g1, b1, a1] = c1;
+                            const [r2, g2, b2, a2] = c2;
+                            return (
+                                Math.abs(r1 - r2) < 5 &&
+                                Math.abs(g1 - g2) < 5 &&
+                                Math.abs(b1 - b2) < 5 &&
+                                Math.abs(a1 - a2) < 5
+                            );
+                        }
 
-                        // Apply modified image data to the current layer
-                        layerCtx.putImageData(imgData, 0, 0);
+                        const queue = [[x, y]];
 
+                        while (queue.length > 0) {
+                            const [cx, cy] = queue.shift(); // <-- You missed this line
+                            if (cx < 0 || cy < 0 || cx >= width || cy >= height) continue;
+
+                            const idx = cy * width + cx;
+                            if (visited[idx]) continue;
+
+                            const currentColor = colorAt(cx, cy);
+                            if (!matchColor(currentColor, targetColor)) continue;
+
+                            if (layers[activeLayerIndex].alphaLock) {
+                                const alpha = data[idx * 4 + 3];
+                                if (alpha === 0) continue;
+                            }
+
+                            setColor(cx, cy);
+                            visited[idx] = 1;
+
+                            queue.push([cx + 1, cy]);
+                            queue.push([cx - 1, cy]);
+                            queue.push([cx, cy + 1]);
+                            queue.push([cx, cy - 1]);
+                        }
+
+                        // ✅ only apply image and rerender after the full fill is done
+                        layerCtx.putImageData(layerData, 0, 0);
                         renderAllLayers();
                         updateLayerThumbnails();
                     }
-                    else {
-                        const layerCtx = layers[activeLayerIndex].ctx;
-                        const pixel = layerCtx.getImageData(x, y, 1, 1).data;
-                        const targetHex = rgbToHex(pixel[0], pixel[1], pixel[2]);
 
-                        floodFill(x, y, targetHex, brushColor);
+
+
+
+
+
+                    function hexToRgb(hex) {
+                        const r = parseInt(hex.slice(1, 3), 16);
+                        const g = parseInt(hex.slice(3, 5), 16);
+                        const b = parseInt(hex.slice(5, 7), 16);
+                        return [r, g, b];
                     }
 
-                }
-
-
-
-                canvas.addEventListener("touchstart", (e) => {
-                    e.preventDefault();
-                    const rect = canvas.getBoundingClientRect();
-                    const touchX = e.touches[0].clientX - rect.left;
-                    const touchY = e.touches[0].clientY - rect.top;
-                    startDrawing(touchX, touchY);
-                });
-
-                canvas.addEventListener("touchmove", (e) => {
-                    e.preventDefault();
-                    const rect = canvas.getBoundingClientRect();
-                    const touchX = e.touches[0].clientX - rect.left;
-                    const touchY = e.touches[0].clientY - rect.top;
-                    draw(touchX, touchY);
-                });
-
-                canvas.addEventListener("touchend", stopDrawing);
-                canvas.addEventListener("mousedown", (e) => startDrawing(e.offsetX, e.offsetY));
-                canvas.addEventListener("mousemove", (e) => draw(e.offsetX, e.offsetY));
-                canvas.addEventListener("mouseup", stopDrawing);
-                document.addEventListener("mouseup", stopDrawing);
-
-                brushSizeInput.addEventListener("input", (e) => {
-                    if (!isEraser) {
-                        brushSize = parseInt(e.target.value);
-                    }
-                    document.getElementById("brushSizeLabel").textContent = e.target.value;
-                });
-
-                eraserSizeInput.addEventListener("input", (e) => {
-                    if (isEraser) {
-                        brushSize = parseInt(e.target.value);
-                    }
-                    document.getElementById("eraserSizeLabel").textContent = e.target.value;
-                });
-
-
-                colorPicker.addEventListener("input", (e) => {
-                    brushColor = e.target.value;
-                });
-
-                eraserIcon.addEventListener("click", () => {
-                    isEraser = true;
-                    isEyedropper = false;
-                    isBucket = false;
-                    brushSize = parseInt(document.getElementById("eraserSize").value);
-                    highlightTool("eraser");
-                });
-
-                brushIcon.addEventListener("click", () => {
-                    isEraser = false;
-                    isEyedropper = false;
-                    isBucket = false;
-                    brushSize = parseInt(document.getElementById("brushSize").value);
-                    highlightTool("brush");
-                });
-
-
-                eyedropperIcon.addEventListener("click", () => {
-                    isEyedropper = true;
-                    isEraser = false;
-                    isBucket = false;
-                    highlightTool("eyedropper");
-                });
-
-                bucketIcon.addEventListener("click", () => {
-                    isBucket = true;
-                    isEraser = false;
-                    isEyedropper = false;
-                    highlightTool("bucket");
-                });
-
-                function highlightTool(tool) {
-                    brushIcon.style.border = tool === "brush" ? "2px solid black" : "none";
-                    eraserIcon.style.border = tool === "eraser" ? "2px solid black" : "none";
-                    eyedropperIcon.style.border = tool === "eyedropper" ? "2px solid black" : "none";
-                    bucketIcon.style.border = tool === "bucket" ? "2px solid black" : "none";
-                }
-
-                undoButton.addEventListener("click", () => {
-                    const layer = layers[activeLayerIndex];
-                    if (layer.undoStack.length > 0) {
-                        const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        layer.redoStack.push(currentState);
-
-                        const prevState = layer.undoStack.pop();
-                        layer.ctx.putImageData(prevState, 0, 0);
-                        renderAllLayers();
-                        updateLayerThumbnails();
-                    }
-                });
-
-
-
-                redoButton.addEventListener("click", () => {
-                    const layer = layers[activeLayerIndex];
-                    if (layer.redoStack.length > 0) {
-                        const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        layer.undoStack.push(currentState);
-
-                        const redoState = layer.redoStack.pop();
-                        layer.ctx.putImageData(redoState, 0, 0);
-                        renderAllLayers();
-                        updateLayerThumbnails();
-                    }
-                });
-
-
-                submitButton.addEventListener("click", () => {
-                    const backgroundHidden = !layers[0].visible;
-                    const hasHiddenLayers = layers.some((layer, i) => i !== 0 && !layer.visible);
-
-                    if (backgroundHidden) {
-                        alert("🚫 The background layer must be visible to submit your drawing.");
-                        return;
-                    }
-
-                    if (hasHiddenLayers) {
-                        const proceed = confirm("⚠️ Warning! Hidden layers will not be submitted.\n\nDo you want to continue?");
-                        if (!proceed) return;
-                    }
-
-                    const imageData = canvas.toDataURL("image/png");
-
-
-
-                    fetch(imageData)
-                        .then(res => res.blob())
-                        .then(blob => {
-                            const formData = new FormData();
-                            formData.append("file", blob, "doodle.png");
-
-                            fetch("https://discord.com/api/webhooks/1359909431868915953/WrhoQ4ZpZU0JG-Fvh197BuekJdXC56OYJbBHclhYiuvGqu0fhoKJ-6bjb3nwRoqxw7NM", {
-                                method: "POST",
-                                body: formData
-                            })
-                                .then(response => {
-                                    if (response.ok) {
-                                        alert("Submitted!");
-                                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                                        fillCanvasWhite();
-                                        saveDrawingState();
-                                    } else {
-                                        alert("Submission failed.");
-                                        console.error("Error:", response.statusText);
-                                    }
+                    function rgbToHex(r, g, b) {
+                        return (
+                            "#" +
+                            [r, g, b]
+                                .map((x) => {
+                                    const hex = x.toString(16);
+                                    return hex.length === 1 ? "0" + hex : hex;
                                 })
-
-                                .catch(error => {
-                                    alert("Submission failed.");
-                                    console.error("Fetch error:", error);
-                                });
-                        });
-                });
-
-
-                document.addEventListener("keydown", (e) => {
-                    if (e.ctrlKey && !e.shiftKey && e.key === "z") {
-                        e.preventDefault();
-                        undoButton.click();
-                    } else if (e.ctrlKey && e.shiftKey && e.key === "Z") {
-                        e.preventDefault();
-                        redoButton.click();
+                                .join("")
+                                .toUpperCase()
+                        );
                     }
-                });
-                toggleLayerMenu.addEventListener("click", () => {
-                    const isVisible = layerMenu.style.display === "block";
-                    layerMenu.style.display = isVisible ? "none" : "block";
-                });
 
-                const downloadBtn = document.getElementById("downloadBtn");
-                const downloadMenu = document.getElementById("downloadMenu");
-                const downloadPNG = document.getElementById("downloadPNG");
-                const saveForLater = document.getElementById("saveForLater");
-                const uploadBtn = document.getElementById("uploadBtn");
-                const uploadInput = document.getElementById("uploadSave");
+                    function handleToolClick(x, y) {
+                        if (isEyedropper) {
+                            // Create a temporary canvas to composite visible layers
+                            const tempCanvas = document.createElement("canvas");
+                            tempCanvas.width = canvas.width;
+                            tempCanvas.height = canvas.height;
+                            const tempCtx = tempCanvas.getContext("2d");
 
-                downloadBtn.addEventListener("click", () => {
-                    downloadMenu.style.display = downloadMenu.style.display === "block" ? "none" : "block";
-                });
+                            // Composite all visible layers from bottom to top
+                            for (let i = 0; i < layers.length; i++) {
+                                if (layers[i].visible) {
+                                    tempCtx.drawImage(layers[i].canvas, 0, 0);
+                                }
+                            }
 
-                // 📥 Download PNG
-                downloadPNG.addEventListener("click", () => {
-                    downloadMenu.style.display = "none";
+                            // Sample pixel from merged result
+                            const pixel = tempCtx.getImageData(x, y, 1, 1).data;
+                            const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
 
-                    const mergedCanvas = document.createElement("canvas");
-                    mergedCanvas.width = canvas.width;
-                    mergedCanvas.height = canvas.height;
-                    const mergedCtx = mergedCanvas.getContext("2d");
+                            brushColor = hex;
+                            colorPicker.value = hex;
+                            updateLayerThumbnails();
 
-                    for (let i = 0; i < layers.length; i++) {
-                        if (layers[i].visible) {
-                            mergedCtx.globalAlpha = layers[i].opacity;
-                            mergedCtx.drawImage(layers[i].canvas, 0, 0);
+                            return;
                         }
-                    }
-                    mergedCtx.globalAlpha = 1;
 
-                    const link = document.createElement("a");
-                    link.download = "my-doodle.png";
-                    link.href = mergedCanvas.toDataURL("image/png");
-                    link.click();
-                });
+                        if (!contiguousToggle.checked) {
+                            // Non-contiguous: fill entire canvas with brush color, including transparent areas
+                            const layer = layers[activeLayerIndex];
+                            const layerCtx = layer.ctx;
 
-                // 💾 Save For Later
-                saveForLater.addEventListener("click", () => {
-                    downloadMenu.style.display = "none";
+                            // Save current state for undo
+                            const prevState = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+                            layer.undoStack.push(prevState);
+                            layer.redoStack = [];
 
-                    const saveData = {
-                        layers: layers.map(layer => ({
-                            name: layer.name,
-                            visible: layer.visible,
-                            opacity: layer.opacity,
-                            alphaLock: layer.alphaLock,
-                            dataURL: layer.canvas.toDataURL()
-                        })),
-                        activeLayerIndex
-                    };
+                            // Fill pixels in the image data
+                            const imgData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+                            const data = imgData.data;
+                            const rgb = hexToRgb(brushColor);
 
-                    const blob = new Blob([JSON.stringify(saveData)], { type: "application/json" });
-                    const link = document.createElement("a");
-                    link.download = "doodle-save.json";
-                    link.href = URL.createObjectURL(blob);
-                    link.click();
-                });
+                            for (let i = 0; i < data.length; i += 4) {
+                                if (layer.alphaLock && data[i + 3] === 0) continue; // Skip fully transparent pixels if alpha lock
+                                data[i] = rgb[0];
+                                data[i + 1] = rgb[1];
+                                data[i + 2] = rgb[2];
+                                data[i + 3] = 255;
+                            }
 
-                // 📤 Upload Save
-                uploadBtn.addEventListener("click", () => {
-                    uploadInput.click();
-                });
 
-                uploadInput.addEventListener("change", (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
+                            // Apply modified image data to the current layer
+                            layerCtx.putImageData(imgData, 0, 0);
 
-                    const reader = new FileReader();
-                    reader.onload = function (event) {
-                        try {
-                            const saveData = JSON.parse(event.target.result);
-                            layers.length = 0;
-
-                            saveData.layers.forEach(savedLayer => {
-                                const newCanvas = document.createElement("canvas");
-                                newCanvas.width = canvas.width;
-                                newCanvas.height = canvas.height;
-                                const ctx = newCanvas.getContext("2d");
-
-                                const img = new Image();
-                                img.onload = () => {
-                                    ctx.drawImage(img, 0, 0);
-                                    renderAllLayers();
-                                    updateLayerMenu();
-                                };
-                                img.src = savedLayer.dataURL;
-
-                                layers.push({
-                                    name: savedLayer.name,
-                                    visible: savedLayer.visible,
-                                    opacity: savedLayer.opacity,
-                                    alphaLock: savedLayer.alphaLock,
-                                    canvas: newCanvas,
-                                    ctx: ctx,
-                                    undoStack: [],
-                                    redoStack: []
-                                });
-                            });
-
-                            activeLayerIndex = saveData.activeLayerIndex || 0;
                             renderAllLayers();
-                            updateLayerMenu();
-                        } catch (err) {
-                            alert("Failed to load the doodle file. Are you sure it's valid?");
+                            updateLayerThumbnails();
                         }
-                    };
-                    reader.readAsText(file);
-                });
+                        else {
+                            const layerCtx = layers[activeLayerIndex].ctx;
+                            const pixel = layerCtx.getImageData(x, y, 1, 1).data;
+                            const targetHex = rgbToHex(pixel[0], pixel[1], pixel[2]);
 
+                            floodFill(x, y, targetHex, brushColor);
+                        }
 
-                window.addEventListener("beforeunload", function (e) {
-                    if (hasDrawn) {
-                        e.preventDefault();
-                        e.returnValue = ''; // Required to trigger the native confirm dialog
                     }
-                });
 
 
-            </script>
+
+                    canvas.addEventListener("touchstart", (e) => {
+                        e.preventDefault();
+                        const rect = canvas.getBoundingClientRect();
+                        const touchX = e.touches[0].clientX - rect.left;
+                        const touchY = e.touches[0].clientY - rect.top;
+                        startDrawing(touchX, touchY);
+                    });
+
+                    canvas.addEventListener("touchmove", (e) => {
+                        e.preventDefault();
+                        const rect = canvas.getBoundingClientRect();
+                        const touchX = e.touches[0].clientX - rect.left;
+                        const touchY = e.touches[0].clientY - rect.top;
+                        draw(touchX, touchY);
+                    });
+
+                    canvas.addEventListener("touchend", stopDrawing);
+                    canvas.addEventListener("mousedown", (e) => startDrawing(e.offsetX, e.offsetY));
+                    canvas.addEventListener("mousemove", (e) => draw(e.offsetX, e.offsetY));
+                    canvas.addEventListener("mouseup", stopDrawing);
+                    document.addEventListener("mouseup", stopDrawing);
+
+                    brushSizeInput.addEventListener("input", (e) => {
+                        if (!isEraser) {
+                            brushSize = parseInt(e.target.value);
+                        }
+                        document.getElementById("brushSizeLabel").textContent = e.target.value;
+                    });
+
+                    eraserSizeInput.addEventListener("input", (e) => {
+                        if (isEraser) {
+                            brushSize = parseInt(e.target.value);
+                        }
+                        document.getElementById("eraserSizeLabel").textContent = e.target.value;
+                    });
+
+
+                    colorPicker.addEventListener("input", (e) => {
+                        brushColor = e.target.value;
+                    });
+
+                    eraserIcon.addEventListener("click", () => {
+                        isEraser = true;
+                        isEyedropper = false;
+                        isBucket = false;
+                        brushSize = parseInt(document.getElementById("eraserSize").value);
+                        highlightTool("eraser");
+                    });
+
+                    brushIcon.addEventListener("click", () => {
+                        isEraser = false;
+                        isEyedropper = false;
+                        isBucket = false;
+                        brushSize = parseInt(document.getElementById("brushSize").value);
+                        highlightTool("brush");
+                    });
+
+
+                    eyedropperIcon.addEventListener("click", () => {
+                        isEyedropper = true;
+                        isEraser = false;
+                        isBucket = false;
+                        highlightTool("eyedropper");
+                    });
+
+                    bucketIcon.addEventListener("click", () => {
+                        isBucket = true;
+                        isEraser = false;
+                        isEyedropper = false;
+                        highlightTool("bucket");
+                    });
+
+                    function highlightTool(tool) {
+                        brushIcon.style.border = tool === "brush" ? "2px solid black" : "none";
+                        eraserIcon.style.border = tool === "eraser" ? "2px solid black" : "none";
+                        eyedropperIcon.style.border = tool === "eyedropper" ? "2px solid black" : "none";
+                        bucketIcon.style.border = tool === "bucket" ? "2px solid black" : "none";
+                    }
+
+                    undoButton.addEventListener("click", () => {
+                        const layer = layers[activeLayerIndex];
+                        if (layer.undoStack.length > 0) {
+                            const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            layer.redoStack.push(currentState);
+
+                            const prevState = layer.undoStack.pop();
+                            layer.ctx.putImageData(prevState, 0, 0);
+                            renderAllLayers();
+                            updateLayerThumbnails();
+                        }
+                    });
+
+
+
+                    redoButton.addEventListener("click", () => {
+                        const layer = layers[activeLayerIndex];
+                        if (layer.redoStack.length > 0) {
+                            const currentState = layer.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            layer.undoStack.push(currentState);
+
+                            const redoState = layer.redoStack.pop();
+                            layer.ctx.putImageData(redoState, 0, 0);
+                            renderAllLayers();
+                            updateLayerThumbnails();
+                        }
+                    });
+
+
+                    submitButton.addEventListener("click", () => {
+                        const backgroundHidden = !layers[0].visible;
+                        const hasHiddenLayers = layers.some((layer, i) => i !== 0 && !layer.visible);
+
+                        if (backgroundHidden) {
+                            alert("🚫 The background layer must be visible to submit your drawing.");
+                            return;
+                        }
+
+                        if (hasHiddenLayers) {
+                            const proceed = confirm("⚠️ Warning! Hidden layers will not be submitted.\n\nDo you want to continue?");
+                            if (!proceed) return;
+                        }
+
+                        const imageData = canvas.toDataURL("image/png");
+
+
+
+                        fetch(imageData)
+                            .then(res => res.blob())
+                            .then(blob => {
+                                const formData = new FormData();
+                                formData.append("file", blob, "doodle.png");
+
+                                fetch("https://discord.com/api/webhooks/1359909431868915953/WrhoQ4ZpZU0JG-Fvh197BuekJdXC56OYJbBHclhYiuvGqu0fhoKJ-6bjb3nwRoqxw7NM", {
+                                    method: "POST",
+                                    body: formData
+                                })
+                                    .then(response => {
+                                        if (response.ok) {
+                                            alert("Submitted!");
+                                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                            fillCanvasWhite();
+                                            saveDrawingState();
+                                        } else {
+                                            alert("Submission failed.");
+                                            console.error("Error:", response.statusText);
+                                        }
+                                    })
+
+                                    .catch(error => {
+                                        alert("Submission failed.");
+                                        console.error("Fetch error:", error);
+                                    });
+                            });
+                    });
+
+
+                    document.addEventListener("keydown", (e) => {
+                        if (e.ctrlKey && !e.shiftKey && e.key === "z") {
+                            e.preventDefault();
+                            undoButton.click();
+                        } else if (e.ctrlKey && e.shiftKey && e.key === "Z") {
+                            e.preventDefault();
+                            redoButton.click();
+                        }
+                    });
+                    toggleLayerMenu.addEventListener("click", () => {
+                        const isVisible = layerMenu.style.display === "block";
+                        layerMenu.style.display = isVisible ? "none" : "block";
+                    });
+
+                    const downloadBtn = document.getElementById("downloadBtn");
+                    const downloadMenu = document.getElementById("downloadMenu");
+                    const downloadPNG = document.getElementById("downloadPNG");
+                    const saveForLater = document.getElementById("saveForLater");
+                    const uploadBtn = document.getElementById("uploadBtn");
+                    const uploadInput = document.getElementById("uploadSave");
+
+                    downloadBtn.addEventListener("click", () => {
+                        downloadMenu.style.display = downloadMenu.style.display === "block" ? "none" : "block";
+                    });
+
+                    // 📥 Download PNG
+                    downloadPNG.addEventListener("click", () => {
+                        downloadMenu.style.display = "none";
+
+                        const mergedCanvas = document.createElement("canvas");
+                        mergedCanvas.width = canvas.width;
+                        mergedCanvas.height = canvas.height;
+                        const mergedCtx = mergedCanvas.getContext("2d");
+
+                        for (let i = 0; i < layers.length; i++) {
+                            if (layers[i].visible) {
+                                mergedCtx.globalAlpha = layers[i].opacity;
+                                mergedCtx.drawImage(layers[i].canvas, 0, 0);
+                            }
+                        }
+                        mergedCtx.globalAlpha = 1;
+
+                        const link = document.createElement("a");
+                        link.download = "my-doodle.png";
+                        link.href = mergedCanvas.toDataURL("image/png");
+                        link.click();
+                    });
+
+                    // 💾 Save For Later
+                    saveForLater.addEventListener("click", () => {
+                        downloadMenu.style.display = "none";
+
+                        const saveData = {
+                            layers: layers.map(layer => ({
+                                name: layer.name,
+                                visible: layer.visible,
+                                opacity: layer.opacity,
+                                alphaLock: layer.alphaLock,
+                                dataURL: layer.canvas.toDataURL()
+                            })),
+                            activeLayerIndex
+                        };
+
+                        const blob = new Blob([JSON.stringify(saveData)], { type: "application/json" });
+                        const link = document.createElement("a");
+                        link.download = "doodle-save.json";
+                        link.href = URL.createObjectURL(blob);
+                        link.click();
+                    });
+
+                    // 📤 Upload Save
+                    uploadBtn.addEventListener("click", () => {
+                        uploadInput.click();
+                    });
+
+                    uploadInput.addEventListener("change", (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        const reader = new FileReader();
+                        reader.onload = function (event) {
+                            try {
+                                const saveData = JSON.parse(event.target.result);
+                                layers.length = 0;
+
+                                saveData.layers.forEach(savedLayer => {
+                                    const newCanvas = document.createElement("canvas");
+                                    newCanvas.width = canvas.width;
+                                    newCanvas.height = canvas.height;
+                                    const ctx = newCanvas.getContext("2d");
+
+                                    const img = new Image();
+                                    img.onload = () => {
+                                        ctx.drawImage(img, 0, 0);
+                                        renderAllLayers();
+                                        updateLayerMenu();
+                                    };
+                                    img.src = savedLayer.dataURL;
+
+                                    layers.push({
+                                        name: savedLayer.name,
+                                        visible: savedLayer.visible,
+                                        opacity: savedLayer.opacity,
+                                        alphaLock: savedLayer.alphaLock,
+                                        canvas: newCanvas,
+                                        ctx: ctx,
+                                        undoStack: [],
+                                        redoStack: []
+                                    });
+                                });
+
+                                activeLayerIndex = saveData.activeLayerIndex || 0;
+                                renderAllLayers();
+                                updateLayerMenu();
+                            } catch (err) {
+                                alert("Failed to load the doodle file. Are you sure it's valid?");
+                            }
+                        };
+                        reader.readAsText(file);
+                    });
+
+
+                    window.addEventListener("beforeunload", function (e) {
+                        if (hasDrawn) {
+                            e.preventDefault();
+                            e.returnValue = ''; // Required to trigger the native confirm dialog
+                        }
+                    });
+
+
+                </script>
 </body>
 </html>
