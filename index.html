@@ -139,7 +139,10 @@
                 flex-direction: column;
                 gap: 8px;
                 min-width: 120px;
+                padding: 0 12px; /* adds left + right padding inside this block */
+                box-sizing: border-box; /* ensures padding doesn't overflow */
             }
+
 
 
             .tool-grid {
@@ -154,6 +157,11 @@
                 margin-top: 0;
             }
         }
+
+        input[type="range"] {
+            box-sizing: border-box;
+        }
+
 
 
         #layerMenu {
