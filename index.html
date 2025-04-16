@@ -102,6 +102,44 @@
             }
         }
 
+        @media screen and (max-width: 600px) and (orientation: portrait) {
+            #tools {
+                position: static !important;
+                margin-top: 20px;
+                width: 100%;
+                flex-direction: row !important;
+                flex-wrap: nowrap;
+                justify-content: space-between;
+                align-items: center;
+                gap: 8px;
+                padding: 10px;
+                background: #fff0f5;
+                border-radius: 12px;
+                box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+            }
+
+                #tools > * {
+                    flex: 0 0 auto;
+                    scroll-snap-align: start;
+                    min-width: 60px;
+                }
+
+            .tool-grid {
+                grid-template-columns: repeat(4, 40px);
+                gap: 6px;
+                margin-bottom: 0;
+            }
+
+            .undo-redo {
+                flex-direction: column;
+                gap: 6px;
+                margin-top: 0;
+            }
+        }
+
+
         #layerMenu {
             position: absolute;
             top: 55px;
