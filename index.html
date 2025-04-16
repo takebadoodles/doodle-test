@@ -151,6 +151,21 @@
                 gap: 6px;
                 margin-top: 0;
             }
+
+            #canvasWrapper #submit {
+                display: none;
+            }
+
+            #mobileSubmit {
+                display: block;
+                order: 3;
+                width: 100%;
+                max-width: 300px;
+                margin-top: 12px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
         }
 
 
@@ -528,17 +543,21 @@
             }
 
             #canvasWrapper {
-                order: 1; /* canvas comes first */
+                order: 1;
             }
 
             #tools {
-                order: 2; /* tools come below canvas */
+                order: 2;
             }
 
             #submit {
-                order: 3; /* submit button still last */
+                order: 3;
+                width: 100%;
+                max-width: 300px;
+                margin-top: 12px;
             }
         }
+
 
         @media screen and (min-width: 601px) {
             #canvasWrapper {
@@ -546,13 +565,14 @@
             }
 
             #submit {
-                order: 2;
+                order: 2; /* Comes after canvas */
             }
 
             #tools {
                 order: 3;
             }
         }
+
 
 
 
@@ -605,11 +625,13 @@
     <div id="mainArea">
         <div id="canvasWrapper">
             <canvas id="canvas" width="400" height="300"></canvas>
-            <button id="submit">Submit</button> <!-- ✅ NOW it's under canvas -->
+            <button id="submit">Submit</button> <!-- ✅ Moved inside -->
         </div>
 
         <div id="tools">...</div>
     </div>
+
+    <button id="mobileSubmit" style="display: none;">Submit</button>
 
 
 
@@ -687,7 +709,7 @@
             const brushIcon = document.getElementById("brush");
             const eyedropperIcon = document.getElementById("eyedropper");
             const bucketIcon = document.getElementById("bucket");
-            const submitButton = document.getElementById("submit");
+            const submitButtons = document.querySelectorAll("#submit, #mobileSubmit");
             const toggleLayerMenu = document.getElementById("toggleLayerMenu");
             const layerMenu = document.getElementById("layerMenu");
             const eraserSizeInput = document.getElementById("eraserSize");
@@ -1678,52 +1700,55 @@
             });
 
 
-            submitButton.addEventListener("click", () => {
-                const backgroundHidden = !layers[0].visible;
-                const hasHiddenLayers = layers.some((layer, i) => i !== 0 && !layer.visible);
+            submitButtons.forEach(button => {
+                button.addEventListener("click", () => {
+                    // KEEP your existing submission logic here
+                    const backgroundHidden = !layers[0].visible;
+                    const hasHiddenLayers = layers.some((layer, i) => i !== 0 && !layer.visible);
 
-                if (backgroundHidden) {
-                    alert("🚫 The background layer must be visible to submit your drawing.");
-                    return;
-                }
+                    if (backgroundHidden) {
+                        alert("🚫 The background layer must be visible to submit your drawing.");
+                        return;
+                    }
 
-                if (hasHiddenLayers) {
-                    const proceed = confirm("⚠️ Warning! Hidden layers will not be submitted.\n\nDo you want to continue?");
-                    if (!proceed) return;
-                }
+                    if (hasHiddenLayers) {
+                        const proceed = confirm("⚠️ Warning! Hidden layers will not be submitted.\n\nDo you want to continue?");
+                        if (!proceed) return;
+                    }
 
-                const imageData = canvas.toDataURL("image/png");
+                    const imageData = canvas.toDataURL("image/png");
+
+                    fetch(imageData)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const formData = new FormData();
+                            formData.append("file", blob, "doodle.png");
+
+                            fetch("https://discord.com/api/webhooks/1359909431868915953/WrhoQ4ZpZU0JG-Fvh197BuekJdXC56OYJbBHclhYiuvGqu0fhoKJ-6bjb3nwRoqxw7NM", {
 
 
-
-                fetch(imageData)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const formData = new FormData();
-                        formData.append("file", blob, "doodle.png");
-
-                        fetch("https://discord.com/api/webhooks/1359909431868915953/WrhoQ4ZpZU0JG-Fvh197BuekJdXC56OYJbBHclhYiuvGqu0fhoKJ-6bjb3nwRoqxw7NM", {
-                            method: "POST",
-                            body: formData
-                        })
-                            .then(response => {
-                                if (response.ok) {
-                                    alert("Submitted!");
-                                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                                    fillCanvasWhite();
-                                    saveDrawingState();
-                                } else {
-                                    alert("Submission failed.");
-                                    console.error("Error:", response.statusText);
-                                }
+                                method: "POST",
+                                body: formData
                             })
-
-                            .catch(error => {
-                                alert("Submission failed.");
-                                console.error("Fetch error:", error);
-                            });
-                    });
+                                .then(response => {
+                                    if (response.ok) {
+                                        alert("Submitted!");
+                                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                        fillCanvasWhite();
+                                        saveDrawingState();
+                                    } else {
+                                        alert("Submission failed.");
+                                        console.error("Error:", response.statusText);
+                                    }
+                                })
+                                .catch(error => {
+                                    alert("Submission failed.");
+                                    console.error("Fetch error:", error);
+                                });
+                        });
+                });
             });
+
 
 
             document.addEventListener("keydown", (e) => {
