@@ -426,10 +426,11 @@
         .tool-grid {
             display: grid;
             grid-template-columns: repeat(2, 40px);
-            gap: 10px;
+            gap: 8px;
             justify-content: center;
-            margin-bottom: 12px;
+            margin-bottom: 0; /
         }
+
 
             .tool-grid img {
                 width: 32px;
@@ -477,6 +478,24 @@
                 .undo-redo img:hover {
                     background: #ffe0e8;
                 }
+
+        #contiguousLabel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 12px;
+            margin-top: 1px; /* 🔽 reduced gap */
+        }
+
+
+        @media (max-width: 600px) {
+            #contiguousLabel {
+                justify-content: flex-start;
+                padding-left: 8px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -553,6 +572,7 @@
             </div>
 
             <!-- ✍️ Tool icons -->
+  
             <div class="tool-grid">
                 <img id="brush" src="brush.png" title="Brush Tool" />
                 <img id="eraser" src="eraser.png" title="Eraser Tool" />
@@ -560,13 +580,13 @@
                 <img id="bucket" src="bucket.png" title="Bucket Tool" />
             </div>
 
-            <!-- ✅ Contiguous checkbox -->
-            <div style="margin-top: -6px; margin-bottom: 4px; font-size: 12px;">
-                <label style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-                    <input type="checkbox" id="contiguousToggle" checked />
-                    Contiguous
-                </label>
-            </div>
+          
+            <label id="contiguousLabel">
+                <input type="checkbox" id="contiguousToggle" checked />
+                Contiguous
+            </label>
+
+
 
             <div class="undo-redo" style="margin-top: -4px;">
                 <img id="undo" src="undo.png" alt="Undo" title="Undo" />
