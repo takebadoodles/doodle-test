@@ -53,7 +53,7 @@
 
         #tools {
             position: absolute;
-            top: 40%;
+            top: 36%;
             left: calc(50% + 220px); /* same horizontal positioning */
             transform: translateY(-50%); /* 💡 vertically center it */
 
@@ -496,6 +496,55 @@
             }
         }
 
+        #submit {
+            background: #ff89a4; /* 💖 cute pink */
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 12px;
+            box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
+            transition: background 0.2s ease;
+        }
+
+            #submit:hover {
+                background: #ff5e88; /* 💗 darker on hover */
+            }
+
+        @media (max-width: 600px) {
+            #submit {
+                width: 100%;
+                max-width: 300px;
+                margin: 12px auto 0 auto;
+            }
+        }
+
+        @media screen and (max-width: 600px) and (orientation: portrait) {
+            #mainArea {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #canvasWrapper {
+                order: 2; /* push canvas down */
+            }
+
+            3  f {
+                order: 1; /* move tools above */
+            }
+
+            #submit {
+                order: 3; /* put button last */
+                width: 100%;
+                max-width: 300px;
+                margin-top: 16px;
+            }
+        }
+
+
+
     </style>
 </head>
 <body>
@@ -549,6 +598,8 @@
             <button id="submit">Submit</button>
         </div>
 
+
+
         <div id="tools">
             <div class="brush-eraser-combo">
                 <!-- 🎨 Brush size first -->
@@ -572,7 +623,7 @@
             </div>
 
             <!-- ✍️ Tool icons -->
-  
+
             <div class="tool-grid">
                 <img id="brush" src="brush.png" title="Brush Tool" />
                 <img id="eraser" src="eraser.png" title="Eraser Tool" />
@@ -580,7 +631,7 @@
                 <img id="bucket" src="bucket.png" title="Bucket Tool" />
             </div>
 
-          
+
             <label id="contiguousLabel">
                 <input type="checkbox" id="contiguousToggle" checked />
                 Contiguous
@@ -593,6 +644,7 @@
                 <img id="redo" src="redo.png" alt="Redo" title="Redo" />
             </div>
 
+            
 
 
 
