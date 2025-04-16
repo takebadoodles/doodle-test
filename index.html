@@ -101,26 +101,26 @@
                 margin: 0 5px;
             }
         }
-
         @media screen and (max-width: 600px) and (orientation: portrait) {
             #tools {
                 position: static !important;
                 margin-top: 20px;
-                width: 100%;
+                width: 100vw;
+                max-width: 100%;
                 flex-direction: row !important;
                 flex-wrap: nowrap;
-                justify-content: flex-start; /* changed */
-                align-items: center;
+                justify-content: flex-start;
+                align-items: stretch;
                 gap: 8px;
-                padding: 10px 24px 10px 24px; /* increased left & right padding */
+                padding: 12px 20px;
                 background: #fff0f5;
                 border-radius: 12px;
                 box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
                 overflow-x: auto;
-                scroll-snap-type: x mandatory;
+                overflow-y: hidden;
                 box-sizing: border-box;
+                scroll-snap-type: x mandatory;
             }
-
 
                 #tools > * {
                     flex: 0 0 auto;
@@ -128,22 +128,17 @@
                     min-width: 60px;
                 }
 
-                #tools > div:nth-child(1),
-                #tools > div:nth-child(2) {
-                    flex-direction: column;
-                    min-width: auto;
-                    max-width: 90px;
-                    gap: 4px;
-                }
-
             .brush-eraser-combo {
                 display: flex;
                 flex-direction: column;
                 gap: 8px;
                 min-width: 120px;
-                padding: 0 12px; /* adds left + right padding inside this block */
-                box-sizing: border-box; /* ensures padding doesn't overflow */
+                padding: 0 12px;
+                margin-left: 8px;
+                box-sizing: border-box;
             }
+        }
+
 
             .brush-eraser-combo {
                 margin-left: 8px;
@@ -168,10 +163,13 @@
         }
 
         .brush-eraser-combo {
-            flex-shrink: 0; /* prevents it from getting squished */
-            margin-left: 8px; /* nudges it from the edge */
+            flex-shrink: 0;
+            margin-left: 12px;
             scroll-snap-align: start;
+            padding-left: 8px;
+            box-sizing: border-box;
         }
+
 
 
         #layerMenu {
