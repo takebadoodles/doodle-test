@@ -121,6 +121,15 @@
                 box-sizing: border-box;
                 scroll-snap-type: x mandatory;
             }
+            #mobileSubmit {
+                display: block;
+                width: 100%;
+                max-width: 300px;
+                margin-top: 12px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
 
                 #tools > * {
                     flex: 0 0 auto;
@@ -571,6 +580,10 @@
             #tools {
                 order: 3;
             }
+            #mobileSubmit {
+                display: none;
+            }
+
         }
 
 
@@ -628,7 +641,7 @@
             <button id="submit">Submit</button> <!-- ✅ Moved inside -->
         </div>
 
-        <div id="tools">...</div>
+     
     </div>
 
     <button id="mobileSubmit" style="display: none;">Submit</button>
